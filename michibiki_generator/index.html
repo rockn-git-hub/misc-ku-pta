@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <title>みちびき原稿メールジェネレーター</title>
+    <!-- スマホ用レイアウトの基本設定 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -58,7 +61,8 @@
 
         input[type="text"],
         select,
-        textarea {
+        textarea,
+        input[type="date"] {
             font-size: 14px;
             padding: 4px 6px;
             border: 1px solid #ccc;
@@ -67,7 +71,8 @@
         }
 
         input[type="text"],
-        select {
+        select,
+        input[type="date"] {
             height: 32px;
         }
 
@@ -149,8 +154,8 @@
             width: 260px;
         }
 
-        .event-select {
-            width: 80px;
+        .event-date-input {
+            width: 150px;
         }
 
         .buttons {
@@ -207,6 +212,62 @@
             font-size: 13px;
             margin-right: 6px;
         }
+
+        /* ここからスマホ向けレイアウト調整 */
+        @media (max-width: 768px) {
+            body {
+                margin: 8px;
+            }
+
+            .container {
+                padding: 12px 12px 16px;
+            }
+
+            h1 {
+                font-size: 18px;
+            }
+
+            h2 {
+                font-size: 14px;
+            }
+
+            .flex-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .flex-row .field-group {
+                width: 100%;
+            }
+
+            .flex-row input[type="text"],
+            .flex-row select {
+                width: 100%;
+            }
+
+            .event-header-row {
+                align-items: flex-start;
+            }
+
+            .event-title-input,
+            .event-date-input {
+                width: 100%;
+            }
+
+            .event-list {
+                max-height: none;
+            }
+
+            .buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .buttons button {
+                margin-right: 0;
+            }
+        }
     </style>
 </head>
 
@@ -258,9 +319,9 @@
         <!-- 2. 活動内容 -->
         <h2>2. 活動内容（最大20件まで）</h2>
         <p class="note">
-            ・「年 / 月 / 日」はプルダウンから選択<br>
-            ・テキスト（タイトル or 内容）を入力した行だけ自動で「出力」にチェックが入る<br>
-            ・年・月・日・タイトル・内容がすべて空の行は、出力対象にならない
+            ・「日付」はカレンダーから選択（PC/スマホ両対応）<br>
+            ・日付 or タイトル or 内容のどれかを入力した行だけ、自動で「出力」にチェックが入る<br>
+            ・全部空の行は出力対象にならない
         </p>
 
         <div class="section-box">
@@ -308,20 +369,20 @@
             return String(el.value).trim();
         }
 
-        function formatDateToJapaneseFromParts(yearStr, monthStr, dayStr) {
-            if (!yearStr || !monthStr || !dayStr) return "";
-            const y = Number(yearStr);
-            const m = Number(monthStr);
-            const d = Number(dayStr);
-            if (!y || !m || !d) return "";
-            return m + "月" + d + "日";
+        // "yyyy-mm-dd" -> "M月D日"
+        function formatDateToJapanese(dateStr) {
+            if (!dateStr) return "";
+            const d = new Date(dateStr);
+            if (Number.isNaN(d.getTime())) return "";
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            return m + "月" + day + "日";
         }
 
         function buildEventInputs() {
             const container = document.getElementById("eventList");
             if (!container) return;
 
-            const fiscalYear = getFiscalYear(new Date());
             container.innerHTML = "";
 
             for (let i = 1; i <= EVENT_COUNT; i++) {
@@ -337,12 +398,12 @@
                 noSpan.textContent = "No." + String(i).padStart(2, "0");
                 headerRow.appendChild(noSpan);
 
-                // 出力チェック（自動ON/OFF用インジケータ）
+                // 出力チェック（自動ON/OFF）
                 const checkbox = document.createElement("input");
                 checkbox.type = "checkbox";
                 checkbox.className = "event-checkbox";
                 checkbox.id = "eventEnabled_" + i;
-                checkbox.checked = false; // 最初はOFF
+                checkbox.checked = false;
                 headerRow.appendChild(checkbox);
 
                 const cbLabel = document.createElement("label");
@@ -351,62 +412,12 @@
                 cbLabel.className = "event-label";
                 headerRow.appendChild(cbLabel);
 
-                // 年セレクト
-                const yearSelect = document.createElement("select");
-                yearSelect.id = "eventYear_" + i;
-                yearSelect.className = "event-select";
-
-                let opt = document.createElement("option");
-                opt.value = "";
-                opt.textContent = "年";
-                yearSelect.appendChild(opt);
-
-                for (let y = fiscalYear - 1; y <= fiscalYear + 1; y++) {
-                    const o = document.createElement("option");
-                    o.value = String(y);
-                    o.textContent = y + "年";
-                    if (y === fiscalYear) {
-                        o.selected = true;
-                    }
-                    yearSelect.appendChild(o);
-                }
-                headerRow.appendChild(yearSelect);
-
-                // 月セレクト
-                const monthSelect = document.createElement("select");
-                monthSelect.id = "eventMonth_" + i;
-                monthSelect.className = "event-select";
-
-                opt = document.createElement("option");
-                opt.value = "";
-                opt.textContent = "月";
-                monthSelect.appendChild(opt);
-
-                for (let m = 1; m <= 12; m++) {
-                    const o = document.createElement("option");
-                    o.value = String(m);
-                    o.textContent = m + "月";
-                    monthSelect.appendChild(o);
-                }
-                headerRow.appendChild(monthSelect);
-
-                // 日セレクト
-                const daySelect = document.createElement("select");
-                daySelect.id = "eventDay_" + i;
-                daySelect.className = "event-select";
-
-                opt = document.createElement("option");
-                opt.value = "";
-                opt.textContent = "日";
-                daySelect.appendChild(opt);
-
-                for (let d = 1; d <= 31; d++) {
-                    const o = document.createElement("option");
-                    o.value = String(d);
-                    o.textContent = d + "日";
-                    daySelect.appendChild(o);
-                }
-                headerRow.appendChild(daySelect);
+                // 日付 input[type=date]
+                const dateInput = document.createElement("input");
+                dateInput.type = "date";
+                dateInput.id = "eventDate_" + i;
+                dateInput.className = "event-date-input";
+                headerRow.appendChild(dateInput);
 
                 // タイトル
                 const titleInput = document.createElement("input");
@@ -427,25 +438,19 @@
 
                 // 入力の有無で自動チェックON/OFF
                 const updateEnabled = () => {
-                    const year = getInputValue(yearSelect.id);
-                    const month = getInputValue(monthSelect.id);
-                    const day = getInputValue(daySelect.id);
+                    const dateStr = getInputValue(dateInput.id);
                     const title = getInputValue(titleInput.id);
                     const content = getInputValue(contentArea.id);
 
                     const hasAny =
-                        year.length > 0 ||
-                        month.length > 0 ||
-                        day.length > 0 ||
+                        dateStr.length > 0 ||
                         title.length > 0 ||
                         content.length > 0;
 
                     checkbox.checked = hasAny;
                 };
 
-                yearSelect.addEventListener("change", updateEnabled);
-                monthSelect.addEventListener("change", updateEnabled);
-                daySelect.addEventListener("change", updateEnabled);
+                dateInput.addEventListener("change", updateEnabled);
                 titleInput.addEventListener("input", updateEnabled);
                 contentArea.addEventListener("input", updateEnabled);
             }
@@ -456,47 +461,28 @@
 
             for (let i = 1; i <= EVENT_COUNT; i++) {
                 const checkbox = document.getElementById("eventEnabled_" + i);
-                if (!checkbox || !checkbox.checked) {
-                    continue; // 出力OFFはスキップ
-                }
+                if (!checkbox || !checkbox.checked) continue;
 
-                const yearStr = getInputValue("eventYear_" + i);
-                const monthStr = getInputValue("eventMonth_" + i);
-                const dayStr = getInputValue("eventDay_" + i);
+                const dateStr = getInputValue("eventDate_" + i);
                 const title = getInputValue("eventTitle_" + i);
                 const content = getInputValue("eventContent_" + i);
 
                 // 何も入ってなければスキップ
-                if (!yearStr && !monthStr && !dayStr && !title && !content) {
-                    continue;
-                }
+                if (!dateStr && !title && !content) continue;
 
-                // 日付が揃っていない場合はスキップ（安全側）
-                if (!yearStr || !monthStr || !dayStr) {
-                    continue;
-                }
-
-                const y = Number(yearStr);
-                const m = Number(monthStr);
-                const d = Number(dayStr);
-                if (!y || !m || !d) continue;
-
-                const dateStr =
-                    String(y).padStart(4, "0") +
-                    "-" +
-                    String(m).padStart(2, "0") +
-                    "-" +
-                    String(d).padStart(2, "0");
+                // 日付必須（タイトルだけ入ってても出力しない）
+                if (!dateStr) continue;
 
                 const jsDate = new Date(dateStr);
                 if (Number.isNaN(jsDate.getTime())) continue;
 
-                const displayDate = formatDateToJapaneseFromParts(yearStr, monthStr, dayStr);
+                const year = jsDate.getFullYear();
+                const displayDate = formatDateToJapanese(dateStr);
 
                 events.push({
                     dateStr: dateStr,
                     displayDate: displayDate,
-                    year: y,
+                    year: year,
                     title: title,
                     content: content
                 });
@@ -511,9 +497,7 @@
 
             const groups = new Map();
             events.forEach(ev => {
-                if (!groups.has(ev.year)) {
-                    groups.set(ev.year, []);
-                }
+                if (!groups.has(ev.year)) groups.set(ev.year, []);
                 groups.get(ev.year).push(ev);
             });
 
