@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>みちびき原稿メールジェネレーター</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 16px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 16px 20px 24px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin: 16px 0 4px;
+        }
+
+        .note {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+
+        .field-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: inline-block;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            font-size: 14px;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"],
+        select {
+            height: 32px;
+        }
+
+        input[type="text"] {
+            width: 220px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 80px;
+            resize: vertical;
+            white-space: pre-wrap;
+            font-family: "Meiryo", "Yu Gothic", monospace;
+        }
+
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            align-items: flex-start;
+            /* テキストボックスの縦位置を揃える */
+        }
+
+        .flex-row .field-group {
+            margin-bottom: 0;
+        }
+
+        .year-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .event-list {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px;
+            max-height: 520px;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+
+        .event-item {
+            border-bottom: 1px dashed #ddd;
+            padding: 8px 4px;
+        }
+
+        .event-item:last-child {
+            border-bottom: none;
+        }
+
+        .event-header-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .event-label {
+            font-size: 12px;
+            color: #555;
+            min-width: 40px;
+        }
+
+        .event-no {
+            font-weight: bold;
+            font-size: 12px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background-color: #eee;
+            margin-right: 6px;
+        }
+
+        .event-checkbox {
+            margin-right: 4px;
+        }
+
+        .event-title-input {
+            width: 260px;
+        }
+
+        .event-select {
+            width: 80px;
+        }
+
+        .buttons {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 6px 14px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background-color: #1976d2;
+            color: #ffffff;
+        }
+
+        .btn-secondary {
+            background-color: #757575;
+            color: #ffffff;
+        }
+
+        .output-area {
+            margin-top: 12px;
+        }
+
+        .output-area input[type="text"] {
+            width: 100%;
+        }
+
+        .output-area textarea {
+            width: 100%;
+            min-height: 240px;
+        }
+
+        .small {
+            font-size: 11px;
+            color: #555;
+        }
+
+        .section-box {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 6px;
+        }
+
+        .section-title-inline {
+            font-weight: bold;
+            font-size: 13px;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>みちびき原稿メールジェネレーター</h1>
+        <p class="note">
+            先生の名字・学年・自分の名前と、各回の「日付・タイトル・内容」を入れるだけで、
+            「みちびき◯◯」用のメール文が自動生成される。
+            年度はブラウザの現在日時から自動で判定（3月末が年度末）。
+        </p>
+        <p class="note">
+            現在の年度：<span id="fiscalYearText" class="year-label"></span>
+            <span class="badge">3月までが前年度扱い</span>
+        </p>
+
+        <!-- 1. 基本情報 -->
+        <h2>1. 基本情報</h2>
+        <div class="section-box">
+            <div class="flex-row">
+                <div class="field-group">
+                    <label for="teacherSurname">先生の苗字</label><br>
+                    <input id="teacherSurname" type="text" placeholder="例：大西">
+                    <div class="small">「先生」は自動で付く（例：大西先生）</div>
+                </div>
+
+                <div class="field-group">
+                    <label for="senderName">差出人（氏名フル）</label><br>
+                    <input id="senderName" type="text" placeholder="例：山本 太郎">
+                </div>
+
+                <div class="field-group">
+                    <label for="grade">学年</label><br>
+                    <select id="grade">
+                        <option value="1">1年</option>
+                        <option value="2">2年</option>
+                        <option value="3">3年</option>
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <label for="roleName">役割名</label><br>
+                    <input id="roleName" type="text" value="○○委員">
+                    <div class="small">例：○○委員・学級委員長 など。</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 活動内容 -->
+        <h2>2. 活動内容（最大20件まで）</h2>
+        <p class="note">
+            ・「年 / 月 / 日」はプルダウンから選択<br>
+            ・テキスト（タイトル or 内容）を入力した行だけ自動で「出力」にチェックが入る<br>
+            ・年・月・日・タイトル・内容がすべて空の行は、出力対象にならない
+        </p>
+
+        <div class="section-box">
+            <div class="event-list" id="eventList">
+                <!-- JSで20行生成 -->
+            </div>
+        </div>
+
+        <!-- ボタン -->
+        <div class="buttons">
+            <button class="btn-primary" id="generateButton">メール文を生成</button>
+            <button class="btn-secondary" id="clearOutputButton">出力をクリア</button>
+        </div>
+
+        <!-- 出力 -->
+        <div class="output-area">
+            <h2>3. 生成結果</h2>
+            <div class="field-group">
+                <label for="outputSubject">件名</label><br>
+                <input id="outputSubject" type="text" readonly>
+            </div>
+            <div class="field-group">
+                <label for="outputBody">メール本文（コピペ用）</label><br>
+                <textarea id="outputBody" readonly></textarea>
+                <div class="note">
+                    全文コピー：テキストエリア内をクリック → Ctrl + A → Ctrl + C
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EVENT_COUNT = 20;
+
+        function getFiscalYear(now) {
+            const current = now || new Date();
+            const year = current.getFullYear();
+            const month = current.getMonth(); // 0〜11
+            return (month <= 2) ? year - 1 : year; // 1〜3月は前年
+        }
+
+        function getInputValue(id) {
+            const el = document.getElementById(id);
+            if (!el) return "";
+            return String(el.value).trim();
+        }
+
+        function formatDateToJapaneseFromParts(yearStr, monthStr, dayStr) {
+            if (!yearStr || !monthStr || !dayStr) return "";
+            const y = Number(yearStr);
+            const m = Number(monthStr);
+            const d = Number(dayStr);
+            if (!y || !m || !d) return "";
+            return m + "月" + d + "日";
+        }
+
+        function buildEventInputs() {
+            const container = document.getElementById("eventList");
+            if (!container) return;
+
+            const fiscalYear = getFiscalYear(new Date());
+            container.innerHTML = "";
+
+            for (let i = 1; i <= EVENT_COUNT; i++) {
+                const item = document.createElement("div");
+                item.className = "event-item";
+
+                const headerRow = document.createElement("div");
+                headerRow.className = "event-header-row";
+
+                // No.
+                const noSpan = document.createElement("span");
+                noSpan.className = "event-no";
+                noSpan.textContent = "No." + String(i).padStart(2, "0");
+                headerRow.appendChild(noSpan);
+
+                // 出力チェック（自動ON/OFF用インジケータ）
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.className = "event-checkbox";
+                checkbox.id = "eventEnabled_" + i;
+                checkbox.checked = false; // 最初はOFF
+                headerRow.appendChild(checkbox);
+
+                const cbLabel = document.createElement("label");
+                cbLabel.htmlFor = checkbox.id;
+                cbLabel.textContent = "出力";
+                cbLabel.className = "event-label";
+                headerRow.appendChild(cbLabel);
+
+                // 年セレクト
+                const yearSelect = document.createElement("select");
+                yearSelect.id = "eventYear_" + i;
+                yearSelect.className = "event-select";
+
+                let opt = document.createElement("option");
+                opt.value = "";
+                opt.textContent = "年";
+                yearSelect.appendChild(opt);
+
+                for (let y = fiscalYear - 1; y <= fiscalYear + 1; y++) {
+                    const o = document.createElement("option");
+                    o.value = String(y);
+                    o.textContent = y + "年";
+                    if (y === fiscalYear) {
+                        o.selected = true;
+                    }
+                    yearSelect.appendChild(o);
+                }
+                headerRow.appendChild(yearSelect);
+
+                // 月セレクト
+                const monthSelect = document.createElement("select");
+                monthSelect.id = "eventMonth_" + i;
+                monthSelect.className = "event-select";
+
+                opt = document.createElement("option");
+                opt.value = "";
+                opt.textContent = "月";
+                monthSelect.appendChild(opt);
+
+                for (let m = 1; m <= 12; m++) {
+                    const o = document.createElement("option");
+                    o.value = String(m);
+                    o.textContent = m + "月";
+                    monthSelect.appendChild(o);
+                }
+                headerRow.appendChild(monthSelect);
+
+                // 日セレクト
+                const daySelect = document.createElement("select");
+                daySelect.id = "eventDay_" + i;
+                daySelect.className = "event-select";
+
+                opt = document.createElement("option");
+                opt.value = "";
+                opt.textContent = "日";
+                daySelect.appendChild(opt);
+
+                for (let d = 1; d <= 31; d++) {
+                    const o = document.createElement("option");
+                    o.value = String(d);
+                    o.textContent = d + "日";
+                    daySelect.appendChild(o);
+                }
+                headerRow.appendChild(daySelect);
+
+                // タイトル
+                const titleInput = document.createElement("input");
+                titleInput.type = "text";
+                titleInput.id = "eventTitle_" + i;
+                titleInput.className = "event-title-input";
+                titleInput.placeholder = "例：第1回 学級委員会";
+                headerRow.appendChild(titleInput);
+
+                // 内容テキスト
+                const contentArea = document.createElement("textarea");
+                contentArea.id = "eventContent_" + i;
+                contentArea.placeholder = "この回で話し合った内容や決定事項を箇条書きなどで記入";
+
+                item.appendChild(headerRow);
+                item.appendChild(contentArea);
+                container.appendChild(item);
+
+                // 入力の有無で自動チェックON/OFF
+                const updateEnabled = () => {
+                    const year = getInputValue(yearSelect.id);
+                    const month = getInputValue(monthSelect.id);
+                    const day = getInputValue(daySelect.id);
+                    const title = getInputValue(titleInput.id);
+                    const content = getInputValue(contentArea.id);
+
+                    const hasAny =
+                        year.length > 0 ||
+                        month.length > 0 ||
+                        day.length > 0 ||
+                        title.length > 0 ||
+                        content.length > 0;
+
+                    checkbox.checked = hasAny;
+                };
+
+                yearSelect.addEventListener("change", updateEnabled);
+                monthSelect.addEventListener("change", updateEnabled);
+                daySelect.addEventListener("change", updateEnabled);
+                titleInput.addEventListener("input", updateEnabled);
+                contentArea.addEventListener("input", updateEnabled);
+            }
+        }
+
+        function collectEvents() {
+            const events = [];
+
+            for (let i = 1; i <= EVENT_COUNT; i++) {
+                const checkbox = document.getElementById("eventEnabled_" + i);
+                if (!checkbox || !checkbox.checked) {
+                    continue; // 出力OFFはスキップ
+                }
+
+                const yearStr = getInputValue("eventYear_" + i);
+                const monthStr = getInputValue("eventMonth_" + i);
+                const dayStr = getInputValue("eventDay_" + i);
+                const title = getInputValue("eventTitle_" + i);
+                const content = getInputValue("eventContent_" + i);
+
+                // 何も入ってなければスキップ
+                if (!yearStr && !monthStr && !dayStr && !title && !content) {
+                    continue;
+                }
+
+                // 日付が揃っていない場合はスキップ（安全側）
+                if (!yearStr || !monthStr || !dayStr) {
+                    continue;
+                }
+
+                const y = Number(yearStr);
+                const m = Number(monthStr);
+                const d = Number(dayStr);
+                if (!y || !m || !d) continue;
+
+                const dateStr =
+                    String(y).padStart(4, "0") +
+                    "-" +
+                    String(m).padStart(2, "0") +
+                    "-" +
+                    String(d).padStart(2, "0");
+
+                const jsDate = new Date(dateStr);
+                if (Number.isNaN(jsDate.getTime())) continue;
+
+                const displayDate = formatDateToJapaneseFromParts(yearStr, monthStr, dayStr);
+
+                events.push({
+                    dateStr: dateStr,
+                    displayDate: displayDate,
+                    year: y,
+                    title: title,
+                    content: content
+                });
+            }
+
+            events.sort((a, b) => (a.dateStr < b.dateStr ? -1 : a.dateStr > b.dateStr ? 1 : 0));
+            return events;
+        }
+
+        function buildArticleFromEvents(events) {
+            if (!events || events.length === 0) return "";
+
+            const groups = new Map();
+            events.forEach(ev => {
+                if (!groups.has(ev.year)) {
+                    groups.set(ev.year, []);
+                }
+                groups.get(ev.year).push(ev);
+            });
+
+            const years = Array.from(groups.keys()).sort();
+            const lines = [];
+
+            years.forEach((year, idxY) => {
+                const group = groups.get(year) || [];
+
+                if (idxY > 0) lines.push("");
+
+                lines.push(year + "年");
+                lines.push("");
+
+                group.forEach((ev, idxEv) => {
+                    const firstLine = ev.displayDate + " " + (ev.title || "");
+                    lines.push(firstLine);
+                    if (ev.content) lines.push(ev.content);
+                    if (idxEv < group.length - 1) lines.push("");
+                });
+            });
+
+            return lines.join("\n");
+        }
+
+        function buildMailSubject(fiscalYear, gradeNumber) {
+            const gradeLabel = gradeNumber + "年";
+            return "みちびき" + fiscalYear + "向け原稿の送付（" + gradeLabel + "）";
+        }
+
+        function buildMailBody(fiscalYear, teacherSurname, senderName, gradeNumber, roleName, articleText) {
+            const trimmedTeacher = (teacherSurname || "").trim();
+            const teacherFullName = trimmedTeacher ? trimmedTeacher + "先生" : "先生";
+
+            const gradeLabel = gradeNumber + "年";
+            const role = (roleName || "○○委員").trim() || "○○委員";
+
+            const lines = [];
+            lines.push(teacherFullName);
+            lines.push("");
+            lines.push("いつもお世話になっております。");
+            lines.push(gradeLabel + role + "の" + senderName + "です。");
+            lines.push("");
+            lines.push("「みちびき" + fiscalYear + "」向けの原稿案をお送りいたします。");
+            lines.push("お手すきの際にご確認のほど、よろしくお願いいたします。");
+            lines.push("");
+            lines.push("────────────────────");
+            lines.push("ここから原稿");
+            lines.push("────────────────────");
+            lines.push(articleText || "（原稿内容が未入力です）");
+            lines.push("────────────────────");
+            lines.push("ここまで原稿");
+            lines.push("────────────────────");
+            lines.push("");
+            lines.push("お忙しいところ恐れ入りますが、どうぞよろしくお願いいたします。");
+            lines.push("");
+            lines.push(gradeLabel + role);
+            lines.push(senderName);
+
+            return lines.join("\n");
+        }
+
+        function onGenerate() {
+            const now = new Date();
+            const fiscalYear = getFiscalYear(now);
+
+            const teacherSurname = getInputValue("teacherSurname");
+            const senderName = getInputValue("senderName");
+            const gradeNumberStr = getInputValue("grade");
+            const roleName = getInputValue("roleName");
+            const gradeNumber = gradeNumberStr || "1";
+
+            const events = collectEvents();
+            const articleText = buildArticleFromEvents(events);
+
+            const subject = buildMailSubject(fiscalYear, gradeNumber);
+            const body = buildMailBody(
+                fiscalYear,
+                teacherSurname,
+                senderName,
+                gradeNumber,
+                roleName,
+                articleText
+            );
+
+            const subjectEl = document.getElementById("outputSubject");
+            const bodyEl = document.getElementById("outputBody");
+            if (subjectEl) subjectEl.value = subject;
+            if (bodyEl) bodyEl.value = body;
+        }
+
+        function onClearOutput() {
+            const subjectEl = document.getElementById("outputSubject");
+            const bodyEl = document.getElementById("outputBody");
+            if (subjectEl) subjectEl.value = "";
+            if (bodyEl) bodyEl.value = "";
+        }
+
+        function initialize() {
+            const now = new Date();
+            const fiscalYear = getFiscalYear(now);
+            const fiscalLabelEl = document.getElementById("fiscalYearText");
+            if (fiscalLabelEl) {
+                fiscalLabelEl.textContent = fiscalYear + "年度（みちびき" + fiscalYear + "）";
+            }
+
+            buildEventInputs();
+
+            const genBtn = document.getElementById("generateButton");
+            const clearBtn = document.getElementById("clearOutputButton");
+            if (genBtn) genBtn.addEventListener("click", onGenerate);
+            if (clearBtn) clearBtn.addEventListener("click", onClearOutput);
+        }
+
+        window.addEventListener("DOMContentLoaded", initialize);
+    </script>
+</body>
+
+</html>
