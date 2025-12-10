@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>みちびき原稿メールジェネレーター</title>
-    <!-- スマホ用レイアウトの基本設定 -->
+    <!-- スマホ向けレイアウト -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
@@ -93,7 +93,6 @@
             flex-wrap: wrap;
             gap: 12px 20px;
             align-items: flex-start;
-            /* テキストボックスの縦位置を揃える */
         }
 
         .flex-row .field-group {
@@ -182,6 +181,14 @@
             color: #ffffff;
         }
 
+        .btn-copy {
+            background-color: #009688;
+            color: #ffffff;
+            padding: 4px 10px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
         .output-area {
             margin-top: 12px;
         }
@@ -207,13 +214,7 @@
             margin-top: 6px;
         }
 
-        .section-title-inline {
-            font-weight: bold;
-            font-size: 13px;
-            margin-right: 6px;
-        }
-
-        /* ここからスマホ向けレイアウト調整 */
+        /* スマホ向けレイアウト */
         @media (max-width: 768px) {
             body {
                 margin: 8px;
@@ -321,13 +322,20 @@
         <p class="note">
             ・「日付」はカレンダーから選択（PC/スマホ両対応）<br>
             ・日付 or タイトル or 内容のどれかを入力した行だけ、自動で「出力」にチェックが入る<br>
-            ・全部空の行は出力対象にならない
+            ・全部空の行は出力対象にならない<br>
+            ・スマホでは最初は No.1〜5 だけ表示、No.6〜20 はボタンで展開
         </p>
 
         <div class="section-box">
             <div class="event-list" id="eventList">
                 <!-- JSで20行生成 -->
             </div>
+            <div class="small" style="margin-top:4px;">
+                ※スマホでは No.6 以降は「No.6〜20を表示」ボタンで開閉できます。
+            </div>
+            <button class="btn-secondary" id="toggleExtraEventsButton" style="margin-top:6px; display:none;">
+                No.6〜20を表示
+            </button>
         </div>
 
         <!-- ボタン -->
@@ -340,14 +348,16 @@
         <div class="output-area">
             <h2>3. 生成結果</h2>
             <div class="field-group">
-                <label for="outputSubject">件名</label><br>
+                <label for="outputSubject">件名</label>
+                <button type="button" class="btn-copy" onclick="copySubject()">件名をコピー</button><br>
                 <input id="outputSubject" type="text" readonly>
             </div>
             <div class="field-group">
-                <label for="outputBody">メール本文（コピペ用）</label><br>
+                <label for="outputBody">メール本文（コピペ用）</label>
+                <button type="button" class="btn-copy" onclick="copyBody()">本文をコピー</button><br>
                 <textarea id="outputBody" readonly></textarea>
                 <div class="note">
-                    全文コピー：テキストエリア内をクリック → Ctrl + A → Ctrl + C
+                    PCの場合：テキストエリア内をクリック → Ctrl + A → Ctrl + C でもコピーできます。
                 </div>
             </div>
         </div>
@@ -389,10 +399,14 @@
                 const item = document.createElement("div");
                 item.className = "event-item";
 
+                // No.6以降は「追加枠」としてマーク
+                if (i > 5) {
+                    item.dataset.extra = "true";
+                }
+
                 const headerRow = document.createElement("div");
                 headerRow.className = "event-header-row";
 
-                // No.
                 const noSpan = document.createElement("span");
                 noSpan.className = "event-no";
                 noSpan.textContent = "No." + String(i).padStart(2, "0");
@@ -412,7 +426,7 @@
                 cbLabel.className = "event-label";
                 headerRow.appendChild(cbLabel);
 
-                // 日付 input[type=date]
+                // 日付
                 const dateInput = document.createElement("input");
                 dateInput.type = "date";
                 dateInput.id = "eventDate_" + i;
@@ -427,7 +441,7 @@
                 titleInput.placeholder = "例：第1回 学級委員会";
                 headerRow.appendChild(titleInput);
 
-                // 内容テキスト
+                // 内容
                 const contentArea = document.createElement("textarea");
                 contentArea.id = "eventContent_" + i;
                 contentArea.placeholder = "この回で話し合った内容や決定事項を箇条書きなどで記入";
@@ -467,10 +481,7 @@
                 const title = getInputValue("eventTitle_" + i);
                 const content = getInputValue("eventContent_" + i);
 
-                // 何も入ってなければスキップ
                 if (!dateStr && !title && !content) continue;
-
-                // 日付必須（タイトルだけ入ってても出力しない）
                 if (!dateStr) continue;
 
                 const jsDate = new Date(dateStr);
@@ -560,6 +571,53 @@
             return lines.join("\n");
         }
 
+        // クリップボードコピー共通処理
+        function copyToClipboard(text) {
+            if (!text) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        alert("コピーしました。");
+                    })
+                    .catch(() => {
+                        fallbackCopy(text);
+                    });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const temp = document.createElement("textarea");
+            temp.value = text;
+            temp.style.position = "fixed";
+            temp.style.left = "-1000px";
+            temp.style.top = "-1000px";
+            document.body.appendChild(temp);
+            temp.focus();
+            temp.select();
+            try {
+                document.execCommand("copy");
+                alert("コピーしました。");
+            } catch (e) {
+                alert("コピーに失敗しました。");
+            } finally {
+                document.body.removeChild(temp);
+            }
+        }
+
+        function copySubject() {
+            const el = document.getElementById("outputSubject");
+            if (!el) return;
+            copyToClipboard(el.value);
+        }
+
+        function copyBody() {
+            const el = document.getElementById("outputBody");
+            if (!el) return;
+            copyToClipboard(el.value);
+        }
+
         function onGenerate() {
             const now = new Date();
             const fiscalYear = getFiscalYear(now);
@@ -596,6 +654,39 @@
             if (bodyEl) bodyEl.value = "";
         }
 
+        // スマホのときに No.6〜20 を折りたたむ処理
+        function setupExtraEventToggle() {
+            const button = document.getElementById("toggleExtraEventsButton");
+            if (!button) return;
+
+            const extraItems = document.querySelectorAll(".event-item[data-extra='true']");
+            if (window.innerWidth <= 768) {
+                // スマホ：最初は隠す
+                extraItems.forEach(el => {
+                    el.style.display = "none";
+                });
+                if (extraItems.length > 0) {
+                    button.style.display = "inline-block";
+                    button.textContent = "No.6〜20を表示";
+                    let visible = false;
+                    button.onclick = () => {
+                        visible = !visible;
+                        extraItems.forEach(el => {
+                            el.style.display = visible ? "" : "none";
+                        });
+                        button.textContent = visible ? "No.6〜20を隠す" : "No.6〜20を表示";
+                    };
+                }
+            } else {
+                // PC：全部見せる、ボタン非表示
+                extraItems.forEach(el => {
+                    el.style.display = "";
+                });
+                button.style.display = "none";
+                button.onclick = null;
+            }
+        }
+
         function initialize() {
             const now = new Date();
             const fiscalYear = getFiscalYear(now);
@@ -605,11 +696,15 @@
             }
 
             buildEventInputs();
+            setupExtraEventToggle();
 
             const genBtn = document.getElementById("generateButton");
             const clearBtn = document.getElementById("clearOutputButton");
             if (genBtn) genBtn.addEventListener("click", onGenerate);
             if (clearBtn) clearBtn.addEventListener("click", onClearOutput);
+
+            // 画面回転などで幅が変わったときに再判定
+            window.addEventListener("resize", setupExtraEventToggle);
         }
 
         window.addEventListener("DOMContentLoaded", initialize);
