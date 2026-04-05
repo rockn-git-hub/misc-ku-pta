@@ -1,0 +1,442 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* ← ブラウザ全体のスクロール禁止 */
+}
+
+#root {
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+}
+
+/* ===== ロゴ関係 ===== */
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+/* ===== 共通要素 ===== */
+.card {
+  padding: 2em;
+}
+.read-the-docs {
+  color: #888;
+}
+
+/* ===== 入力欄 ===== */
+.input-box {
+  width: 120px;
+  height: 32px;
+  font-size: 16px;
+  padding: 4px 8px;
+  margin-left: 5px;
+  box-sizing: border-box;
+}
+.input-box.small {
+  width: 100px;
+}
+
+/* ===== キャンバスエリア ===== */
+.canvas-wrapper {
+  overflow: auto;
+  padding-right: 2px;
+}
+
+/* ===== テーブルヘッダー ===== */
+.table-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 2px 0;
+  font-size: 15px;
+  font-weight: bold;
+}
+.table-header label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.table-header-input {
+  width: 80px;
+  height: 20px;
+  line-height: 16px;
+  padding: 2px 6px;
+  font-size: 15px;
+}
+
+/* ===== ボタン ===== */
+button {
+  border: 2px solid #444;
+  background-color: #f8f8f8;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+button:hover {
+  background-color: #e6e6e6;
+}
+button:disabled {
+  border-color: #aaa;
+  color: #aaa;
+  cursor: not-allowed;
+}
+button.selected {
+  background-color: #ffeb3b;
+  border-color: #d6b600;
+  color: #000;
+}
+
+/* ===== ツールバー ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+.toolbar-info label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+.toolbar-info input {
+  width: 60px;
+  padding: 4px;
+  border: 1px solid #0a0a0a;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: right;
+}
+.toolbar-info span {
+  background: #045536;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+/* ツールバー行を左右に分割して両端寄せ */
+.toolbar-group--full {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between; /* 左群と右群を端に配置 */
+  align-items: center;
+}
+
+/* 左側のボタン群（ラベル＋インポート＋エクスポート） */
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 右側（データクリアのみ） */
+.toolbar-right {
+  display: flex;
+}
+
+/* （任意）危険操作ボタンの見た目 */
+.btn-danger {
+  border-color: #cc5b5b;
+}
+.btn-danger:hover {
+  background-color: #ffe9e9;
+}
+
+/* ===== 共通モーダル ===== */
+.modal {
+  display: flex;
+  flex-direction: column;
+  background: #fff; /* デフォルト背景 */
+  height: 100%; /* Rndが決めた高さにフィット */
+  border: 2px solid #666;
+  border-radius: 6px;
+  z-index: 1000;
+  font-size: 13px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+.modal-header {
+  padding: 4px 8px;
+  cursor: move;
+  background: #f2f2f2;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: bold;
+}
+.modal-header .close-btn {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+}
+.modal-rnd {
+  min-width: 500px; /* ← 初期データなしでもこれ以上は縮まない */
+  min-height: 300px;
+  position: fixed;
+  border: 2px solid #666;
+  border-radius: 6px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.modal-content {
+  padding: 8px;
+  overflow: auto;
+  flex-grow: 1;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+.upload-btn {
+  display: inline-block;
+  margin: 8px 0;
+  padding: 6px 12px;
+  background: #007bff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.upload-btn:hover {
+  background: #0056b3;
+}
+
+/* ===== 共通テーブル（座席リスト & 参加者リスト用） ===== */
+.common-table {
+  border-collapse: collapse;
+  width: 100%; /* フル幅に変更 */
+  margin: 8px 0;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  table-layout: fixed;
+}
+.common-table th,
+.common-table td {
+  padding: 4px 6px;
+  text-align: left;
+  border: 1px solid #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  height: 32px;
+}
+.common-table th {
+  text-align: center;
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+.common-table tr:nth-child(even) {
+  background-color: #fafafa;
+}
+.common-table tr:hover {
+  background-color: #e7d213;
+}
+
+/* 列幅用クラス */
+.col-seat {
+  width: 8%;
+}
+.col-id {
+  width: 12%;
+}
+.col-attr {
+  width: 25%;
+}
+.col-name {
+  width: 30%;
+}
+
+/* ===== 入力欄 ===== */
+.common-table input,
+.cell-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #444;
+  padding: 0 6px;
+  font-size: 14px;
+  height: 24px;
+  line-height: 24px;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* ===== セル共通 ===== */
+.cell-center {
+  text-align: center;
+  padding: 4px 6px;
+}
+
+/* ===== 行スタイル ===== */
+.row-normal {
+  background-color: white;
+}
+.row-missing {
+  background-color: #ffe6e6;
+}
+
+/* ===== 重複エラー ===== */
+.input-duplicate {
+  border: 2px solid red;
+  background-color: #ffe6e6;
+}
+
+/* === ダークモード === */
+@media (prefers-color-scheme: dark) {
+  .toolbar {
+    background: #222;
+    color: #eee;
+  }
+  .toolbar-group {
+    background: #333;
+    border-color: #555;
+  }
+  .toolbar-label {
+    color: #ccc;
+  }
+  .toolbar-info {
+    color: #ddd;
+  }
+  .toolbar-info input {
+    background: #222;
+    border-color: #555;
+    color: #eee;
+  }
+
+  button {
+    background-color: #444;
+    border-color: #666;
+    color: #eee;
+  }
+  button:hover {
+    background-color: #555;
+  }
+  button:disabled {
+    background-color: #333;
+    border-color: #444;
+    color: #aaa;
+  }
+  button.selected {
+    background-color: #d6b600;
+    color: #000;
+  }
+  .btn-danger {
+    border-color: #aa5a5a;
+    color: #eee;
+  }
+  .btn-danger:hover {
+    background-color: #5a2626;
+  }
+  /* モーダル */
+  .modal {
+    background: #1e1e1e;
+    border-color: #555;
+    color: #eee;
+  }
+  .modal-header {
+    background: #2a2a2a;
+    border-bottom: 1px solid #444;
+    color: #ddd;
+  }
+
+  /* テーブル */
+  .common-table {
+    border-color: #555;
+    background-color: #222;
+    color: #eee;
+  }
+  .common-table th {
+    background-color: #333;
+    color: #ccc;
+  }
+  .common-table tr:nth-child(even) {
+    background-color: #2a2a2a;
+  }
+  .common-table tr:hover {
+    background-color: #444;
+  }
+
+  /* 入力欄 */
+  .common-table input,
+  .cell-input {
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #555;
+  }
+
+  /* 重複エラー */
+  .input-duplicate {
+    border: 2px solid #ff6666;
+    background-color: #661a1a;
+  }
+
+  .row-normal {
+    background-color: #222;
+    color: #eee;
+  }
+  .row-missing {
+    background-color: #661a1a;
+    color: #eee;
+  }
+}

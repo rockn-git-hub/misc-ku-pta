@@ -25,10 +25,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: seat-app/package-lock.json
+
+      - name: Install seat-app dependencies
+        working-directory: seat-app
+        run: npm ci
+
+      - name: Build seat-app
+        working-directory: seat-app
+        run: npm run build
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p _site
+          cp index.html _site/index.html
+          cp -R class-ninzuu-count _site/class-ninzuu-count
+          cp -R michibiki_generator _site/michibiki_generator
+          mkdir -p _site/seat-app
+          cp -R seat-app/dist/. _site/seat-app/
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
