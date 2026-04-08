@@ -78,11 +78,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     border: "1px solid #999",
   };
 
+  const groupStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 0,
+    padding: "6px 10px",
+    border: "1px solid #4a4a4a",
+    borderRadius: 8,
+    background: "#2a2a2a",
+  };
+
   const labelStyle: React.CSSProperties = {
     fontWeight: 600,
     fontSize: 12,
     marginRight: 6,
-    color: "#ddd",
+    color: "#f4f4f4",
   };
 
   return (
@@ -117,7 +128,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               minWidth: 68,
               fontSize: 13,
               fontWeight: 600,
-              color: "#ddd",
+              color: "#f4f4f4",
               textAlign: "left",
               lineHeight: `${CONTROL_HEIGHT}px`,
               height: CONTROL_HEIGHT,
@@ -167,7 +178,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               display: "flex",
               alignItems: "center",
               gap: 4,
-              color: "#ccc",
+              color: "#f0f0f0",
               height: CONTROL_HEIGHT,
             }}
           >
@@ -186,7 +197,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               display: "flex",
               alignItems: "center",
               gap: 4,
-              color: "#ccc",
+              color: "#f0f0f0",
               height: CONTROL_HEIGHT,
             }}
           >
@@ -215,7 +226,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* group 単位の余白は下を0に固定（※確認済み） */}
         <div
           className="toolbar-group"
-          style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 0 }}
+          style={groupStyle}
         >
           <span style={labelStyle}>用紙</span>
           <button
@@ -234,7 +245,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         <div
           className="toolbar-group"
-          style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 0 }}
+          style={groupStyle}
         >
           <span style={labelStyle}>追加</span>
           <button style={buttonStyle} onClick={() => onAddTable("circle")}>
@@ -253,7 +264,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         <div
           className="toolbar-group"
-          style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 0 }}
+          style={groupStyle}
         >
           <span style={labelStyle}>操作</span>
           <button style={buttonStyle} onClick={onOpenSeatModal}>
@@ -269,7 +280,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         <div
           className="toolbar-group"
-          style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 0 }}
+          style={groupStyle}
         >
           <span style={labelStyle}>データ</span>
           <button style={buttonStyle} onClick={onExport}>
