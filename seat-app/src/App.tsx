@@ -79,6 +79,12 @@ function buildParticipantsFromSeats(tables: Table[]): Participant[] {
 }
 
 function App() {
+  const CANVAS_THEME = {
+    pageBg: "#f1f5f9",
+    boardBg: "#f8fafc",
+    boardBorder: "#94a3b8",
+    titleColor: "#0f172a",
+  };
   // =========================================
   // 1️⃣ 初期ロード時に seatsDetail を補完
   // =========================================
@@ -376,8 +382,9 @@ function App() {
         style={{
           flex: 1,
           overflow: "auto",
-          border: "1px solid #ccc",
-          background: "#eee",
+          border: "1px solid #cbd5e1",
+          background:
+            "radial-gradient(circle at top left, #f8fafc 0%, #e2e8f0 60%, #cbd5e1 100%)",
         }}
       >
         <Stage
@@ -385,7 +392,7 @@ function App() {
           width={canvasSize.width + 1}
           height={canvasSize.height + 1}
           style={{
-            backgroundColor: "white",
+            backgroundColor: CANVAS_THEME.pageBg,
             marginLeft: "0px",
           }}
           onMouseDown={(e) => {
@@ -406,7 +413,7 @@ function App() {
                 y={10}
                 fontSize={fontSize * 1.2}
                 fontStyle="bold"
-                fill="black"
+                fill={CANVAS_THEME.titleColor}
               />
             )}
             <Rect
@@ -414,9 +421,9 @@ function App() {
               y={0}
               width={canvasSize.width}
               height={canvasSize.height}
-              fill="transparent" // ← 背景クリックを検知するため必須
-              stroke="black"
-              strokeWidth={3}
+              fill={CANVAS_THEME.boardBg}
+              stroke={CANVAS_THEME.boardBorder}
+              strokeWidth={2}
               listening={true} // ← イベントを有効化
               onMouseDown={() => {
                 setSelectedId(null); // ← フォーカス解除

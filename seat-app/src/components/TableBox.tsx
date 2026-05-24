@@ -156,6 +156,11 @@ export const TableBox: React.FC<TableBoxProps> = ({
   selectedId,
   shapeRefs,
 }) => {
+  const isSelected = selectedId === table.id;
+  const tableStroke = isSelected ? "#0284c7" : "#64748b";
+  const tableStrokeWidth = isSelected ? 3 : 1.5;
+  const tableFill = table.shape === "circle" ? "#dbeafe" : "#bbf7d0";
+
   return (
     <Group
       key={table.id}
@@ -196,17 +201,26 @@ export const TableBox: React.FC<TableBoxProps> = ({
       {table.shape === "circle" ? (
         <Circle
           radius={table.radius!}
-          fill="lightblue"
-          stroke={selectedId === table.id ? "blue" : "black"}
-          strokeWidth={selectedId === table.id ? 4 : 2}
+          fill={tableFill}
+          stroke={tableStroke}
+          strokeWidth={tableStrokeWidth}
+          shadowColor="#0f172a"
+          shadowBlur={10}
+          shadowOpacity={0.12}
+          shadowOffsetY={2}
         />
       ) : (
         <Rect
           width={table.width}
           height={table.height}
-          fill="lightgreen"
-          stroke={selectedId === table.id ? "blue" : "black"}
-          strokeWidth={selectedId === table.id ? 4 : 2}
+          fill={tableFill}
+          stroke={tableStroke}
+          strokeWidth={tableStrokeWidth}
+          cornerRadius={12}
+          shadowColor="#0f172a"
+          shadowBlur={10}
+          shadowOpacity={0.12}
+          shadowOffsetY={2}
           offsetX={table.width! / 2}
           offsetY={table.height! / 2}
         />
@@ -216,7 +230,7 @@ export const TableBox: React.FC<TableBoxProps> = ({
       <Text
         text={table.alias}
         fontSize={fontSize}
-        fill="black"
+        fill="#0f172a"
         align="center"
         width={table.shape === "circle" ? table.radius! * 2 : table.width}
         offsetX={table.shape === "circle" ? table.radius! : table.width! / 2}
@@ -226,7 +240,7 @@ export const TableBox: React.FC<TableBoxProps> = ({
         <Text
           text={`(${table.seats}席)`}
           fontSize={fontSize}
-          fill="black"
+          fill="#1e293b"
           align="center"
           width={table.shape === "circle" ? table.radius! * 2 : table.width}
           offsetX={table.shape === "circle" ? table.radius! : table.width! / 2}
