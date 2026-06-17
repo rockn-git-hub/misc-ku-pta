@@ -1,0 +1,23 @@
+{
+  "name": "pta-private-viewer-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PoC for a PIN-protected PTA document viewer on Vercel",
+  "scripts": {
+    "dev": "node server.cjs",
+    "check": "node --check server.cjs && node --check api/public-docs.js && node --check api/session.js && node --check api/document.js && node --check api/page.js && node --check api/page-url.js && node --check api/logout.js && node --check api/admin-session.js && node --check api/admin-docs.js && node --check api/admin-create-document.js && node --check api/admin-upload-page.js && node --check api/admin-finalize-document.js && node --check api/admin-update-document.js && node --check api/admin-delete-document.js && node --check lib/documents.cjs && node --check lib/documents-store.cjs && node --check lib/storage.cjs && node --check lib/s3-cloudfront.cjs && node --check lib/auth.cjs && node --check lib/http-utils.cjs && node --check main.js && node --check viewer.js && node --check admin.mjs && node --check scripts/load-test-viewer.mjs && node --check scripts/backfill-public-page-urls.mjs && node --check scripts/backfill-public-pages-via-http.mjs",
+    "load:test:viewer": "node scripts/load-test-viewer.mjs",
+    "backfill:public-pages": "node scripts/backfill-public-page-urls.mjs",
+    "backfill:public-pages:http": "node scripts/backfill-public-pages-via-http.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1029.0",
+    "@aws-sdk/cloudfront-signer": "^3.1026.0",
+    "@vercel/blob": "^2.3.3",
+    "pdfjs-dist": "^5.6.205",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "vercel": "^50.44.0"
+  }
+}

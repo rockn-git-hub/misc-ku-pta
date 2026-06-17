@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PTA資料ビューア</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="viewer-shell">
+      <header class="viewer-header compact-header">
+        <h1 id="viewer-title">資料を読み込み中です</h1>
+      </header>
+
+      <section id="gate-panel" class="panel gate-panel" hidden>
+        <div class="panel-head">
+          <h2>PINコード入力</h2>
+          <p>配布されたPINコードを入力すると、資料を表示できます。</p>
+        </div>
+        <form id="pin-form" class="pin-form">
+          <label class="field">
+            <span>PINコード</span>
+            <input id="pin-input" name="pin" inputmode="numeric" autocomplete="one-time-code" placeholder="例: 0420" />
+          </label>
+          <button type="submit" class="primary-button">資料を開く</button>
+        </form>
+        <p id="gate-message" class="helper-text gate-message" aria-live="polite"></p>
+      </section>
+
+      <section id="viewer-panel" class="panel viewer-panel" hidden>
+        <div class="viewer-toolbar page-toolbar">
+          <button id="prev-button" class="ghost-button" type="button">前へ</button>
+          <strong id="page-indicator" class="page-indicator">1/1ページ</strong>
+          <button id="next-button" class="ghost-button" type="button">次へ</button>
+        </div>
+
+        <div id="swipe-surface" class="swipe-surface">
+          <img id="page-image" class="page-image" alt="資料ページ画像" />
+        </div>
+
+        <div class="viewer-footer">
+          <div class="viewer-footer-meta">
+            <p id="viewer-end-at" class="viewer-meta"></p>
+            <p id="viewer-session-expiry" class="viewer-meta"></p>
+          </div>
+          <div class="viewer-footer-actions">
+            <a id="back-link" class="back-link" href="/">一覧に戻る</a>
+            <button id="logout-button" class="ghost-button" type="button">閲覧を終了する</button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="/viewer.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PTA資料ビューア 管理画面</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">PTA Private Viewer Admin</p>
+        <h1>PDFを登録して<br />URL・QR・PINを発行する</h1>
+        <p class="lead">
+          PDFを選ぶと、ブラウザ側でページ画像に変換して登録できます。登録済み資料の公開切替、削除、PIN再発行もこの画面で行えます。
+        </p>
+        <div class="hero-actions">
+          <a class="ghost-button" href="/">公開一覧へ戻る</a>
+        </div>
+      </section>
+
+      <section id="admin-status" class="panel status-box" aria-live="polite">管理者ログインを確認しています。</section>
+
+      <section id="admin-login-panel" class="panel" hidden>
+        <div class="panel-head">
+          <h2>管理者ログイン</h2>
+          <p>資料登録の前に、管理者パスワードを入力してください。</p>
+        </div>
+        <form id="admin-login-form" class="pin-form">
+          <label class="field">
+            <span>管理者パスワード</span>
+            <input id="admin-password" type="password" autocomplete="current-password" />
+          </label>
+          <button type="submit" class="primary-button">ログインする</button>
+        </form>
+      </section>
+
+      <section id="admin-app-panel" class="panel" hidden>
+        <div class="admin-toolbar">
+          <div>
+            <h2>資料登録</h2>
+            <p class="helper-text">PDFを選び、公開期間を決めて登録します。</p>
+          </div>
+          <button id="admin-logout-button" type="button" class="ghost-button">ログアウト</button>
+        </div>
+
+        <form id="register-form" class="admin-form">
+          <label class="field field-full">
+            <span>PDFファイル</span>
+            <input id="pdf-file" type="file" accept="application/pdf" />
+          </label>
+
+          <label class="field">
+            <span>タイトル</span>
+            <input id="doc-title" type="text" placeholder="例: 2026年度 第1回PTA総会資料" />
+          </label>
+
+          <label class="field">
+            <span>説明</span>
+            <input id="doc-description" type="text" placeholder="例: 4/20 PTA総会 当日資料" />
+          </label>
+
+          <label class="field">
+            <span>公開開始</span>
+            <input id="start-at" type="datetime-local" />
+          </label>
+
+          <label class="field">
+            <span>公開終了</span>
+            <input id="end-at" type="datetime-local" />
+          </label>
+
+          <button id="register-button" type="submit" class="primary-button field-full">PDFを登録して発行する</button>
+        </form>
+      </section>
+
+      <section id="upload-progress-panel" class="panel" hidden>
+        <div class="panel-head">
+          <h2>登録状況</h2>
+          <p id="upload-progress-text">準備中です。</p>
+        </div>
+        <div class="progress-track">
+          <div id="upload-progress-bar" class="progress-bar"></div>
+        </div>
+        <div class="progress-actions">
+          <button id="cancel-register-button" type="button" class="ghost-button">登録をキャンセルする</button>
+        </div>
+      </section>
+
+      <section id="result-panel" class="panel" hidden>
+        <div class="panel-head">
+          <h2>発行結果</h2>
+          <p>この内容をそのまま参加者へ案内できます。</p>
+        </div>
+        <div class="result-grid">
+          <div class="result-card">
+            <p class="eyebrow">Viewer URL</p>
+            <p id="result-url" class="result-value"></p>
+            <button id="copy-url-button" type="button" class="ghost-button">URLをコピー</button>
+          </div>
+          <div class="result-card">
+            <p class="eyebrow">PIN</p>
+            <p id="result-pin" class="result-value result-pin"></p>
+          </div>
+          <div class="result-card qr-card">
+            <p class="eyebrow">QR Code</p>
+            <img id="result-qr" alt="閲覧用QRコード" />
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>登録済み資料</h2>
+          <p>公開設定、PIN、削除操作をここで管理します。</p>
+        </div>
+        <div id="admin-doc-list" class="admin-doc-list"></div>
+      </section>
+    </main>
+    <script type="module" src="/admin.mjs"></script>
+  </body>
+</html>

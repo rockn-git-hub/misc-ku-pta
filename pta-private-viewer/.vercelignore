@@ -1,0 +1,5 @@
+.venv
+.npm-cache
+data
+api/_documents
+__pycache__
