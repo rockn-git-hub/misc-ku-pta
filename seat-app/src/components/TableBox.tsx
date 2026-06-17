@@ -204,10 +204,6 @@ export const TableBox: React.FC<TableBoxProps> = ({
           fill={tableFill}
           stroke={tableStroke}
           strokeWidth={tableStrokeWidth}
-          shadowColor="#0f172a"
-          shadowBlur={10}
-          shadowOpacity={0.12}
-          shadowOffsetY={2}
         />
       ) : (
         <Rect
@@ -217,10 +213,6 @@ export const TableBox: React.FC<TableBoxProps> = ({
           stroke={tableStroke}
           strokeWidth={tableStrokeWidth}
           cornerRadius={12}
-          shadowColor="#0f172a"
-          shadowBlur={10}
-          shadowOpacity={0.12}
-          shadowOffsetY={2}
           offsetX={table.width! / 2}
           offsetY={table.height! / 2}
         />

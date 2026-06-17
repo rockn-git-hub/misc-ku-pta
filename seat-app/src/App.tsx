@@ -385,6 +385,8 @@ function App() {
           border: "1px solid #cbd5e1",
           background:
             "radial-gradient(circle at top left, #f8fafc 0%, #e2e8f0 60%, #cbd5e1 100%)",
+          padding: "14px",
+          boxSizing: "border-box",
         }}
       >
         <Stage
@@ -393,7 +395,8 @@ function App() {
           height={canvasSize.height + 1}
           style={{
             backgroundColor: CANVAS_THEME.pageBg,
-            marginLeft: "0px",
+            margin: "0 auto",
+            display: "block",
           }}
           onMouseDown={(e) => {
             // 背景（Layer）をクリックした場合のみ選択解除
@@ -409,8 +412,8 @@ function App() {
             {title && (
               <Text
                 text={title}
-                x={10}
-                y={10}
+                x={18}
+                y={16}
                 fontSize={fontSize * 1.2}
                 fontStyle="bold"
                 fill={CANVAS_THEME.titleColor}
