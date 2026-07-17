@@ -1,0 +1,9 @@
+.vercel
+.vercel-global
+node_modules
+data
+api/_documents
+__pycache__
+.venv
+.npm-cache
+.vercel-env.production

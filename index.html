@@ -124,42 +124,46 @@
     <section class="hero">
       <h1>PTA向けツール集</h1>
       <p>
-        このリポジトリで公開している静的ツールの一覧です。スマホでもそのまま使えます。
-        下のカードから各ページを開いてください。
+        このリポジトリで公開・管理している PTA 向けのツール一覧です。
+        スマホでも使えるものから、GitHub Pages 以外で動かしているものまで、ここから入口をまとめています。
       </p>
     </section>
 
     <section class="grid" aria-label="公開ツール一覧">
       <a class="card" href="./class-ninzuu-count/">
         <span class="eyebrow">TOOL 01</span>
-        <h2>人数集計</h2>
-        <p>
-          学年と組ごとの人数を入力し、学年別合計と全体合計をその場で確認できます。
-        </p>
+        <h2>人数カウント</h2>
+        <p>学年と組ごとの人数を入力し、学年別と全体集計をその場で確認できます。</p>
         <div class="path">/class-ninzuu-count/</div>
       </a>
 
       <a class="card" href="./michibiki_generator/">
         <span class="eyebrow">TOOL 02</span>
-        <h2>みちびき原稿メールジェネレーター</h2>
-        <p>
-          既存の静的ツールへの導線です。公開後は同じ Pages 上からアクセスできます。
-        </p>
+        <h2>みちびき次年度メールジェネレーター</h2>
+        <p>既存の掲載内容をもとに、次年度向けの案内文を作るための補助ツールです。</p>
         <div class="path">/michibiki_generator/</div>
       </a>
 
       <a class="card" href="./seat-app/">
         <span class="eyebrow">TOOL 03</span>
         <h2>席次表アプリ</h2>
-        <p>
-          Vite で構成された座席表編集アプリです。GitHub Pages 公開用にビルドした成果物へ遷移します。
-        </p>
+        <p>Vite で構成した席次表アプリです。GitHub Pages 公開用にビルドした画面へ移動します。</p>
         <div class="path">/seat-app/</div>
+      </a>
+
+      <a class="card" href="https://ku-pta-private-viewer.vercel.app/" target="_blank" rel="noreferrer">
+        <span class="eyebrow">TOOL 04</span>
+        <h2>PTA資料プライベートビューア</h2>
+        <p>
+          PDF を管理画面から登録し、PIN 認証つきでスマホ閲覧できるツールです。
+          実行環境は Vercel、ソースコードはこの repo の <code>pta-private-viewer/</code> にあります。
+        </p>
+        <div class="path">Vercel: ku-pta-private-viewer.vercel.app</div>
       </a>
     </section>
 
     <footer>
-      GitHub Pages で配信されます。
+      GitHub Pages と外部ホスティングの入口をまとめています。
     </footer>
   </main>
 </body>

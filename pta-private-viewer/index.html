@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PTA資料ビューア</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">PTA Private Viewer</p>
+        <h1>QRで開ける<br />PTA資料ビューア</h1>
+        <p class="lead">
+          公開中の資料を一覧で確認できます。総会などで配布されたPINコードを入力すると、スマホ向けの画像ビューアで資料を読めます。
+        </p>
+        <div class="hero-actions">
+          <a class="card-link" href="/admin.html">管理画面を開く</a>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>公開資料一覧</h2>
+          <p>現在公開されている資料を表示します。</p>
+        </div>
+        <div id="document-list" class="public-doc-list" aria-live="polite"></div>
+      </section>
+    </main>
+    <script src="/main.js" defer></script>
+  </body>
+</html>
