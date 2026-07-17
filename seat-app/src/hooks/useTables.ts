@@ -120,10 +120,16 @@ export function useTables({ tables, setTables, setSelectedId }: UseTablesProps) 
       alias: `テーブル${newNumber}`,
       x: original.x + 30,
       y: original.y + 30,
-      seatsDetail: [...original.seatsDetail], // ✅ 100件コピー
+      seatsDetail: original.seatsDetail.map((seat) => ({
+        ...seat,
+        id: "",
+        attr1: "",
+        attr2: "",
+        name: "",
+      })),
     };
 
-    setTables([...tables, newTable]);
+    setTables((prev) => [...prev, newTable]);
     setSelectedId(newTable.id);
   };
 

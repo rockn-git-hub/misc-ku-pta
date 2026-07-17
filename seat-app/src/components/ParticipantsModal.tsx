@@ -96,21 +96,34 @@ export const ParticipantsModal: React.FC<Props> = ({
       }))
       .filter((r) => r.name);
 
+    if (parsed.length === 0) {
+      window.alert("取り込み可能な参加者がありません。名前列の設定を確認してください。");
+      return;
+    }
+
+    if (
+      (tables.length > 0 || participants.length > 0) &&
+      !window.confirm(
+        "現在のテーブルと参加者データを、Excelの内容で全て置き換えます。よろしいですか？"
+      )
+    ) {
+      return;
+    }
+
     const grouped = new Map<string, Participant[]>();
     for (const p of parsed) {
       if (!grouped.has(p.tableName)) grouped.set(p.tableName, []);
       grouped.get(p.tableName)!.push({ id: p.id, name: p.name, attr1: p.attr1, attr2: p.attr2 });
     }
 
-    setTables((prev) => {
-      const newTables = [...prev];
+    setTables(() => {
+      const newTables: Table[] = [];
       let index = 0;
 
       grouped.forEach((people, tableKey) => {
         // === 入力名を優先 ===
         const rawName = tableKey.trim() || "";
-        const numMatch = rawName.match(/\d+/); // 数字を含む場合に抽出
-        const num = numMatch ? Number(numMatch[0]) : index + 1;
+        const num = index + 1;
 
         // === 既存テーブル検索（number または alias 名で） ===
         let t =
@@ -271,9 +284,24 @@ export const ParticipantsModal: React.FC<Props> = ({
               <button
                 className="btn-danger"
                 onClick={() => {
-                  if (window.confirm("参加者データを全てクリアしますか？")) {
+                  if (
+                    window.confirm(
+                      "参加者データと各座席のID・属性・名前をクリアしますか？テーブル配置は残ります。"
+                    )
+                  ) {
                     setParticipants([]);
-                    setTables([]);
+                    setTables((prev) =>
+                      prev.map((table) => ({
+                        ...table,
+                        seatsDetail: (table.seatsDetail ?? []).map((seat) => ({
+                          ...seat,
+                          id: "",
+                          attr1: "",
+                          attr2: "",
+                          name: "",
+                        })),
+                      }))
+                    );
                   }
                 }}
               >
