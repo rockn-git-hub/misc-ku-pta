@@ -150,8 +150,16 @@ export const SeatEditModal: React.FC<SeatEditModalProps> = ({
     // 編集後の席フィールド（ローカルで合成）
     const sAfter = { ...sNow, [field]: value };
 
-    // 1) 「ID手入力」の場合はまず席を更新して終了（participants同期はしない）
+    // 1) 「ID手入力」の場合は席と表示値をまとめて更新（participants同期はしない）
     if (field === "id") {
+      const matched = participants.find((p) => p.id === value);
+      const seatWithMatchedFields = {
+        ...sAfter,
+        attr1: matched?.attr1 ?? "",
+        attr2: matched?.attr2 ?? "",
+        name: matched?.name ?? "",
+      };
+
       setTables((prev) =>
         prev.map((tt) =>
           tt.id === tableId
@@ -168,7 +176,7 @@ export const SeatEditModal: React.FC<SeatEditModalProps> = ({
                       name: "",
                     });
                   }
-                  arr[seatIndex] = sAfter;
+                  arr[seatIndex] = seatWithMatchedFields;
                   return arr;
                 })(),
               }
@@ -176,30 +184,6 @@ export const SeatEditModal: React.FC<SeatEditModalProps> = ({
         )
       );
 
-      // 入力IDに一致する参加者があれば、席側の表示値も合わせる（片方向補完）
-      const matched = participants.find((p) => p.id === value);
-      if (matched) {
-        setTables((prev) =>
-          prev.map((tt) =>
-            tt.id === tableId
-              ? {
-                  ...tt,
-                  seatsDetail: (() => {
-                    const arr = [...tt.seatsDetail];
-                    const cur = arr[seatIndex] ?? sAfter;
-                    arr[seatIndex] = {
-                      ...cur,
-                      attr1: matched.attr1 ?? "",
-                      attr2: matched.attr2 ?? "",
-                      name: matched.name ?? "",
-                    };
-                    return arr;
-                  })(),
-                }
-              : tt
-          )
-        );
-      }
       return;
     }
 
@@ -360,16 +344,6 @@ export const SeatEditModal: React.FC<SeatEditModalProps> = ({
                             onChange={(e) => {
                               const newId = e.target.value;
                               updateSeatField(t.id, idx, "id", newId, {
-                                syncParticipants: false,
-                              });
-                              const matched = participants.find((p) => p.id === newId);
-                              updateSeatField(t.id, idx, "attr1", matched?.attr1 ?? "", {
-                                syncParticipants: false,
-                              });
-                              updateSeatField(t.id, idx, "attr2", matched?.attr2 ?? "", {
-                                syncParticipants: false,
-                              });
-                              updateSeatField(t.id, idx, "name", matched?.name ?? "", {
                                 syncParticipants: false,
                               });
                             }}
