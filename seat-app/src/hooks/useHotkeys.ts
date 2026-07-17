@@ -4,15 +4,19 @@ import { useEffect } from "react";
 type UseHotkeysProps = {
   isSeatModalOpen: boolean;
   selectedId: string | null;
+  selectedSeat: { tableIndex: number; seatIndex: number } | null;
   copyTable: (id: string) => void;
   deleteTable: (id: string) => void;
+  deleteSeat: (tableIndex: number, seatIndex: number) => void;
 };
 
 export function useHotkeys({
   isSeatModalOpen,
   selectedId,
+  selectedSeat,
   copyTable,
   deleteTable,
+  deleteSeat,
 }: UseHotkeysProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,7 +41,11 @@ export function useHotkeys({
         switch (e.key) {
           case "Delete":
             e.preventDefault();
-            if (selectedId) deleteTable(selectedId);
+            if (selectedSeat) {
+              deleteSeat(selectedSeat.tableIndex, selectedSeat.seatIndex);
+            } else if (selectedId) {
+              deleteTable(selectedId);
+            }
             break;
         }
       }
@@ -45,5 +53,5 @@ export function useHotkeys({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSeatModalOpen, selectedId, copyTable, deleteTable]);
+  }, [isSeatModalOpen, selectedId, selectedSeat, copyTable, deleteTable, deleteSeat]);
 }

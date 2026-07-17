@@ -129,11 +129,37 @@ function App() {
     setSelectedId,
   });
 
+  const deleteSeat = (tableIndex: number, seatIndex: number) => {
+    setTables((prev) =>
+      prev.map((table, index) => {
+        if (index !== tableIndex || seatIndex < 0 || seatIndex >= table.seats) return table;
+
+        const seatsDetail = [...table.seatsDetail];
+        for (let i = seatIndex; i < table.seats - 1; i += 1) {
+          seatsDetail[i] = { ...seatsDetail[i + 1], seatNumber: i + 1 };
+        }
+        seatsDetail[table.seats - 1] = {
+          seatNumber: table.seats,
+          id: "",
+          attr1: "",
+          attr2: "",
+          name: "",
+        };
+
+        return { ...table, seats: table.seats - 1, seatsDetail };
+      })
+    );
+    setSelectedSeat(null);
+    setSelectedId(null);
+  };
+
   useHotkeys({
     isSeatModalOpen,
     selectedId,
+    selectedSeat,
     copyTable,
     deleteTable,
+    deleteSeat,
   });
 
   const handleExportJson = () => {
