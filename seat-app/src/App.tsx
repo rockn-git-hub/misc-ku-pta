@@ -6,6 +6,7 @@ import { Text } from "react-konva"; // ← 追加（タイトル描画用）
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Stage, Layer, Transformer, Rect } from "react-konva";
+import type Konva from "konva";
 
 import { SeatEditModal } from "./components/SeatEditModal";
 import { ParticipantsModal } from "./components/ParticipantsModal";
@@ -19,6 +20,63 @@ import { rotateTablesForOrientationChange } from "./lib/rotate";
 import { exportJson, importJson, exportPdf, exportXlsx } from "./lib/io";
 
 type Orientation = "portrait" | "landscape";
+
+declare global {
+  interface Window {
+    openSeatModal?: (id: string) => void;
+  }
+}
+
+function nextNumericId(tables: Table[], participants: Participant[]) {
+  const nums: number[] = [];
+
+  for (const p of participants) {
+    const n = Number(p.id);
+    if (Number.isFinite(n)) nums.push(n);
+  }
+  for (const t of tables) {
+    for (const s of t.seatsDetail ?? []) {
+      const n = Number(s.id);
+      if (Number.isFinite(n)) nums.push(n);
+    }
+  }
+  const max = nums.length ? Math.max(...nums) : 0;
+  return String(max + 1);
+}
+
+function buildParticipantsFromSeats(tables: Table[]): Participant[] {
+  const list: Participant[] = [];
+  const used = new Set<string>();
+
+  for (const t of tables) {
+    for (const s of t.seatsDetail ?? []) {
+      const hasSome = s.name?.trim() || s.attr1?.trim() || s.attr2?.trim();
+      if (!hasSome) continue;
+
+      const idStr = String(s.id ?? "").trim();
+      if (idStr && /^\d+$/.test(idStr) && !used.has(idStr)) {
+        list.push({ id: idStr, name: s.name ?? "", attr1: s.attr1 ?? "", attr2: s.attr2 ?? "" });
+        used.add(idStr);
+      }
+    }
+  }
+
+  for (const t of tables) {
+    for (const s of t.seatsDetail ?? []) {
+      const hasSome = s.name?.trim() || s.attr1?.trim() || s.attr2?.trim();
+      if (!hasSome) continue;
+
+      const idStr = String(s.id ?? "").trim();
+      if (!idStr || !/^\d+$/.test(idStr) || used.has(idStr)) {
+        const newId = String(Number(nextNumericId(tables, list)));
+        list.push({ id: newId, name: s.name ?? "", attr1: s.attr1 ?? "", attr2: s.attr2 ?? "" });
+        used.add(newId);
+      }
+    }
+  }
+
+  return list;
+}
 
 function App() {
   // =========================================
@@ -56,9 +114,9 @@ function App() {
 
   const [isParticipantsOpen, setParticipantsOpen] = useState(false);
 
-  const trRef = useRef<any>(null);
-  const shapeRefs = useRef<Record<string, any>>({});
-  const stageRef = useRef<any>(null); // ★ PDF出力用
+  const trRef = useRef<Konva.Transformer>(null);
+  const shapeRefs = useRef<Record<string, Konva.Group>>({});
+  const stageRef = useRef<Konva.Stage>(null); // ★ PDF出力用
 
   const [scale, setScale] = useState<number>(restored?.scale ?? 1.0);
 
@@ -106,7 +164,7 @@ function App() {
 
   // グローバル関数
   useEffect(() => {
-    (window as any).openSeatModal = (id: string) => {
+    window.openSeatModal = (id: string) => {
       setFocusTableId(id);
       setSeatModalOpen(true);
     };
@@ -231,68 +289,6 @@ function App() {
     exportXlsx(tables, participants, title);
   };
 
-  // ★ 追加：数値IDの次番号を採番（participants と tables の両方を見て MAX+1）
-  function nextNumericId(tables: Table[], participants: Participant[]) {
-    const nums: number[] = [];
-
-    // participants 側（数字だけのIDのみ対象）
-    for (const p of participants) {
-      const n = Number(p.id);
-      if (Number.isFinite(n)) nums.push(n);
-    }
-    // tables 側（座席IDに数字が入ってるもの）
-    for (const t of tables) {
-      for (const s of t.seatsDetail ?? []) {
-        const n = Number(s.id);
-        if (Number.isFinite(n)) nums.push(n);
-      }
-    }
-    const max = nums.length ? Math.max(...nums) : 0;
-    return String(max + 1); // 文字列IDとして返す
-  }
-
-  // ★ 追加：座席から参加者リストを生成
-  function buildParticipantsFromSeats(tables: Table[]): Participant[] {
-    const list: Participant[] = [];
-    const used = new Set<string>();
-
-    // 1周目：IDが数字の席はそのIDで作成
-    for (const t of tables) {
-      for (const s of t.seatsDetail ?? []) {
-        const hasSome = s.name?.trim() || s.attr1?.trim() || s.attr2?.trim();
-        if (!hasSome) continue;
-
-        const idStr = String(s.id ?? "").trim();
-        if (idStr && /^\d+$/.test(idStr) && !used.has(idStr)) {
-          list.push({ id: idStr, name: s.name ?? "", attr1: s.attr1 ?? "", attr2: s.attr2 ?? "" });
-          used.add(idStr);
-        }
-      }
-    }
-
-    // 2周目：ID未設定や非数値の席に新規IDを振って作成
-    for (const t of tables) {
-      for (const s of t.seatsDetail ?? []) {
-        const hasSome = s.name?.trim() || s.attr1?.trim() || s.attr2?.trim();
-        if (!hasSome) continue;
-
-        const idStr = String(s.id ?? "").trim();
-        if (!idStr || !/^\d+$/.test(idStr) || used.has(idStr)) {
-          // 採番
-          const newId = (() => {
-            const n = Number(nextNumericId(tables, list));
-            // listに入れるたびに max が上がるので、ここは list ベースでOK
-            return String(n);
-          })();
-          list.push({ id: newId, name: s.name ?? "", attr1: s.attr1 ?? "", attr2: s.attr2 ?? "" });
-          used.add(newId);
-        }
-      }
-    }
-
-    return list;
-  }
-
   // ★ 追加：初期化フック（participants が空なら seats から自動生成し、席IDも欠けていれば埋める）
   useEffect(() => {
     if (participants.length > 0) return; // 既に名簿があるなら何もしない
@@ -328,7 +324,7 @@ function App() {
     });
 
     setParticipants(built);
-  }, [tables]); // tables 初期ロード後に1回走ればOK（participants が空のときだけ動く）
+  }, [tables, participants.length]); // tables 初期ロード後に1回走ればOK（participants が空のときだけ動く）
 
   return (
     <div

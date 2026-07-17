@@ -9,6 +9,7 @@
 
 import React from "react";
 import { Group, Rect, Text, Line } from "react-konva";
+import type { KonvaEventObject } from "konva/lib/Node";
 import type { Table } from "../types";
 
 // ------------------------------------------------------------
@@ -190,7 +191,7 @@ const SeatRect: React.FC<{
   seatHeight: number;
   fontSize: number;
   isSelected: boolean;
-  onClick: (e: any) => void;
+  onClick: (e: KonvaEventObject<MouseEvent>) => void;
 }> = ({ seatIndex, seatX, seatY, seatWidth, seatHeight, fontSize, isSelected, onClick }) => (
   <Group x={seatX} y={seatY} onClick={onClick}>
     {/* 座席矩形 */}
@@ -371,7 +372,7 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
     selectedSeat.seatIndex === seatIndex;
 
   // --- クリックで「選択 → 入替」 ---
-  const handleClick = (e: any) => {
+  const handleClick = (e: KonvaEventObject<MouseEvent>) => {
     e.cancelBubble = true; // テーブル全体へのイベント伝播を防止
 
     const targetTableId = table.id;

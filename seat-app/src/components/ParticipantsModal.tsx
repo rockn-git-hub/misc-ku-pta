@@ -21,6 +21,7 @@ export const ParticipantsModal: React.FC<Props> = ({
   onClose,
   participants,
   setParticipants,
+  tables,
   setTables,
 }) => {
   const [hasHeader, setHasHeader] = useState(true);
@@ -212,7 +213,9 @@ export const ParticipantsModal: React.FC<Props> = ({
       return newTables;
     });
 
-    setParticipants(parsed.map(({ tableName, ...rest }) => rest));
+    setParticipants(
+      parsed.map(({ id, name, attr1, attr2 }) => ({ id, name, attr1, attr2 }))
+    );
     setPreviewOpen(false);
   };
 

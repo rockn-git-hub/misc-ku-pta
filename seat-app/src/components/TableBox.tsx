@@ -1,6 +1,7 @@
 // src/components/TableBox.tsx
 import React from "react";
 import { Group, Rect, Circle, Text } from "react-konva";
+import type Konva from "konva";
 import type { Table } from "../types";
 import { SeatBox } from "./SeatBox";
 
@@ -18,7 +19,7 @@ type TableBoxProps = {
   isSeatModalOpen: boolean;
   setFocusTableId: (id: string | null) => void;
   selectedId: string | null; // ← 追加！
-  shapeRefs: React.RefObject<Record<string, any>>;
+  shapeRefs: React.RefObject<Record<string, Konva.Group>>;
 };
 
 // === 円卓用 ===
@@ -115,7 +116,6 @@ function renderRectSeats(
         const len = Math.sqrt(dx * dx + dy * dy) || 1;
         labelX = seatX + (dx / len) * LABEL_DISTANCE;
         labelY = seatY + (dy / len) * LABEL_DISTANCE;
-        labelY = labelY;
       }
 
       return (
@@ -173,7 +173,7 @@ export const TableBox: React.FC<TableBoxProps> = ({
       onDblClick={() => {
         setSelectedId(table.id);
         setFocusTableId(table.id);
-        (window as any).openSeatModal(table.id);
+        window.openSeatModal?.(table.id);
       }}
       onDragEnd={(e) =>
         updateTable(table.id, { x: e.target.x(), y: e.target.y() })

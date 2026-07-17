@@ -32,12 +32,13 @@ function safeParse(json: string | null): unknown | null {
 }
 
 /** V1 形式かの軽量バリデーション（最低限の形だけチェック） */
-function isSaveSchemaV1(x: any): x is SaveSchemaV1 {
+function isSaveSchemaV1(x: unknown): x is SaveSchemaV1 {
+  if (typeof x !== "object" || x === null) return false;
+  const candidate = x as Record<string, unknown>;
   return (
-    x &&
-    x.version === 1 &&
-    (x.orientation === "portrait" || x.orientation === "landscape") &&
-    Array.isArray(x.tables)
+    candidate.version === 1 &&
+    (candidate.orientation === "portrait" || candidate.orientation === "landscape") &&
+    Array.isArray(candidate.tables)
   );
 }
 

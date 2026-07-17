@@ -10,6 +10,20 @@ import type { Table, Participant, SeatDetail } from "../types";
 --------------------------- */
 const MAX_SEATS = 100;
 
+type JsonRecord = Record<string, unknown>;
+
+type ExportRow = {
+  テーブル名: string;
+  座席番号: number;
+  名前: string;
+  属性1: string;
+  属性2: string;
+};
+
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null;
+}
+
 // 100席ぶんの空データを生成（読み込み時の補完用）
 function createEmptySeats(fromIndex: number): SeatDetail[] {
   return Array.from({ length: MAX_SEATS - fromIndex }, (_, i) => ({
@@ -25,7 +39,7 @@ function createEmptySeats(fromIndex: number): SeatDetail[] {
 // ✅ JSON エクスポート（座席数分だけ保存）
 // ------------------------------------------------------------
 export const exportJson = (data: SaveSchemaV1, title?: string) => {
-  const safeTitle = (title?.trim() || "席次表").replace(/[\\\/\?\*\[\]\:]/g, "");
+  const safeTitle = (title?.trim() || "席次表").replace(/[\\/?*[\]:]/g, "");
 
   const normalized = {
     version: data.version,
@@ -70,22 +84,25 @@ export const importJson = (
   const reader = new FileReader();
   reader.onload = (ev) => {
     try {
-      const obj = JSON.parse(ev.target?.result as string);
+      const obj: unknown = JSON.parse(ev.target?.result as string);
       if (
-        obj &&
+        isJsonRecord(obj) &&
         obj.version === 1 &&
         (obj.orientation === "portrait" || obj.orientation === "landscape") &&
         Array.isArray(obj.tables)
       ) {
+        const rawTables = obj.tables as unknown[];
         const normalized: SaveSchemaV1 = {
           version: 1,
-          updatedAt: obj.updatedAt ?? new Date().toISOString(),
+          updatedAt:
+            typeof obj.updatedAt === "string" ? obj.updatedAt : new Date().toISOString(),
           orientation: obj.orientation,
-          scale: obj.scale ?? 1.8,
-          fontSize: obj.fontSize ?? 16,
-          title: obj.title ?? "席次表",
-          tables: obj.tables.map((t: Table) => {
-            const seatsDetail: SeatDetail[] = (t.seatsDetail ?? []).map((s: any) => ({
+          scale: typeof obj.scale === "number" ? obj.scale : 1.8,
+          fontSize: typeof obj.fontSize === "number" ? obj.fontSize : 16,
+          title: typeof obj.title === "string" ? obj.title : "席次表",
+          tables: rawTables.map((rawTable) => {
+            const table = rawTable as Table;
+            const seatsDetail: SeatDetail[] = (table.seatsDetail ?? []).map((s) => ({
               seatNumber: s.seatNumber,
               id: s.id ?? "",
               attr1: s.attr1 ?? "",
@@ -99,9 +116,11 @@ export const importJson = (
               seatsDetail.push(...extra);
             }
 
-            return { ...t, seatsDetail };
+            return { ...table, seatsDetail };
           }),
-          participants: obj.participants ?? [],
+          participants: Array.isArray(obj.participants)
+            ? (obj.participants as Participant[])
+            : [],
         };
         onSuccess(normalized);
       } else {
@@ -151,7 +170,7 @@ export const importParticipantsXlsx = (
 };
 
 export const exportXlsx = (tables: Table[], participants: Participant[], title?: string) => {
-  const rows: any[] = [];
+  const rows: ExportRow[] = [];
 
   tables.forEach((table: Table) => {
     // ✅ 実際の座席数だけ出力
@@ -210,11 +229,12 @@ export const exportXlsx = (tables: Table[], participants: Participant[], title?:
 
   // === 列幅設定 ===
   // === 列幅をデータから自動算出 ===
-  const colWidths = ["テーブル名", "座席番号", "名前", "属性1", "属性2"].map((key) => {
+  const columns: (keyof ExportRow)[] = ["テーブル名", "座席番号", "名前", "属性1", "属性2"];
+  const colWidths = columns.map((key) => {
     // 各列の最大文字長を求める
     const maxLen = Math.max(
       key.length,
-      ...rows.map((r) => (r[key] ? r[key].toString().length : 0))
+      ...rows.map((r) => String(r[key]).length)
     );
     // 全角文字も考慮して1.2倍くらい余裕を持たせる
     return { wch: Math.ceil(maxLen * 3.0) };
@@ -224,7 +244,7 @@ export const exportXlsx = (tables: Table[], participants: Participant[], title?:
   // === シート名処理 ===
   let safeTitle = title?.trim() || "席次表";
   // Excelで使えない文字を除去
-  safeTitle = safeTitle.replace(/[\\\/\?\*\[\]\:]/g, "");
+  safeTitle = safeTitle.replace(/[\\/?*[\]:]/g, "");
 
   // === ワークブック作成 ===
   const wb = XLSX.utils.book_new();
@@ -235,10 +255,15 @@ export const exportXlsx = (tables: Table[], participants: Participant[], title?:
   XLSX.writeFile(wb, filename);
 };
 
-export function exportPdf(stage: any, orientation: "portrait" | "landscape", title?: string) {
-  const safeTitle = (title?.trim() || "席次表").replace(/[\\\/\?\*\[\]\:]/g, "");
+export function exportPdf(
+  stage: Konva.Stage,
+  orientation: "portrait" | "landscape",
+  title?: string
+) {
+  const safeTitle = (title?.trim() || "席次表").replace(/[\\/?*[\]:]/g, "");
 
-  const layer = stage.findOne("Layer");
+  const layer = stage.findOne<Konva.Layer>("Layer");
+  if (!layer) return;
   const background = new Konva.Rect({
     x: 0,
     y: 0,

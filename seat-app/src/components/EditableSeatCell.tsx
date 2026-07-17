@@ -5,7 +5,13 @@ interface EditableSeatCellProps {
   value: string;
   editable: boolean;
   editingCell: { tableId: string; seatIndex: number; field: string } | null;
-  setEditingCell: React.Dispatch<any>;
+  setEditingCell: React.Dispatch<
+    React.SetStateAction<{
+      tableId: string;
+      seatIndex: number;
+      field: "attr1" | "attr2" | "name";
+    } | null>
+  >;
   updateSeatField: (
     tableId: string,
     seatIndex: number,
