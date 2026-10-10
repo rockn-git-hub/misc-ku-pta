@@ -9,7 +9,11 @@ interface ToolbarProps {
   setTitle: React.Dispatch<React.SetStateAction<string>>;
   orientation: Orientation;
   onChangeOrientation: (o: Orientation) => void;
-  onAddTable: (shape: "circle" | "square" | "rectangle", orientation?: Orientation) => void;
+  onAddTable: (
+    shape: Table["shape"],
+    orientation?: Orientation,
+    design?: Table["design"]
+  ) => void;
   onCopy: () => void;
   onDelete: () => void;
   onExport: () => void;
@@ -259,6 +263,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </button>
           <button style={buttonStyle} onClick={() => onAddTable("rectangle", "portrait")}>
             縦長机
+          </button>
+          <button style={buttonStyle} onClick={() => onAddTable("rectangle", "landscape", "joined")}>
+            くっつけた長机(横)
+          </button>
+          <button style={buttonStyle} onClick={() => onAddTable("rectangle", "portrait", "joined")}>
+            くっつけた長机(縦)
           </button>
         </div>
 

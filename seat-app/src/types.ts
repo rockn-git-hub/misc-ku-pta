@@ -13,6 +13,7 @@ export interface Table {
   number: number;
   alias: string;
   shape: "circle" | "rectangle" | "square";
+  design?: "joined"; // 長机をくっつけた外観
   x: number;
   y: number;
   width?: number;

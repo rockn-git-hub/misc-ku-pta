@@ -42,7 +42,12 @@ export function useTables({ tables, setTables, setSelectedId }: UseTablesProps) 
   // ============================================================
   // 🟢 テーブル追加
   // ============================================================
-  const addTable = (shape: Table["shape"], orientation?: "landscape" | "portrait") => {
+  /** 指定した形状とデザインによる空席テーブルの追加 */
+  const addTable = (
+    shape: Table["shape"],
+    orientation?: "landscape" | "portrait",
+    design?: Table["design"]
+  ) => {
     const id = `T${Date.now()}`;
     const maxNumber = tables.length > 0 ? Math.max(...tables.map((t) => t.number)) : 0;
     const newNumber = maxNumber + 1;
@@ -77,6 +82,8 @@ export function useTables({ tables, setTables, setSelectedId }: UseTablesProps) 
     } else {
       // rectangle
       const isPortrait = orientation === "portrait";
+      const isJoined = design === "joined";
+      const longSide = isJoined ? DEFAULT_RECT_WIDTH * 2 : DEFAULT_RECT_WIDTH;
       newTable = {
         id,
         number: newNumber,
@@ -84,11 +91,12 @@ export function useTables({ tables, setTables, setSelectedId }: UseTablesProps) 
         shape,
         x: 250,
         y: 250,
-        width: isPortrait ? 140 : 270,
-        height: isPortrait ? 270 : 140,
-        seats: 4,
+        width: isPortrait ? DEFAULT_RECT_HEIGHT : longSide,
+        height: isPortrait ? longSide : DEFAULT_RECT_HEIGHT,
+        seats: isJoined ? 9 : 4,
         seatsDetail: createSeatDetails(),
         orientation,
+        ...(design ? { design } : {}),
       };
     }
 

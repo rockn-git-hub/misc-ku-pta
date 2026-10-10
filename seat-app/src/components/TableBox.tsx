@@ -1,6 +1,6 @@
 // src/components/TableBox.tsx
 import React from "react";
-import { Group, Rect, Circle, Text } from "react-konva";
+import { Group, Rect, Circle, Text, Line } from "react-konva";
 import type Konva from "konva";
 import type { Table } from "../types";
 import { SeatBox } from "./SeatBox";
@@ -85,7 +85,10 @@ function renderRectSeats(
       const EDGE_MARGIN = 30; // 端からの余白(px) ← ここを調整
       const usable = Math.max(0, mainLen - EDGE_MARGIN * 2);
       const spacing = count > 1 ? usable / (count - 1) : 0;
-      const along = -mainLen / 2 + EDGE_MARGIN + spacing * i;
+      // くっつけた長机では等分した各区画の中央に配置
+      const along = table.design === "joined"
+        ? -mainLen / 2 + (mainLen / count) * (i + 0.5)
+        : -mainLen / 2 + EDGE_MARGIN + spacing * i;
 
       let seatX = 0,
         seatY = 0,
@@ -116,6 +119,19 @@ function renderRectSeats(
         const len = Math.sqrt(dx * dx + dy * dy) || 1;
         labelX = seatX + (dx / len) * LABEL_DISTANCE;
         labelY = seatY + (dy / len) * LABEL_DISTANCE;
+      }
+
+      // くっつけた長机のラベルを各座席の正面に整列
+      if (table.design === "joined") {
+        // 横長机では座席の外縁から氏名枠までの点線を1/5に短縮
+        const seatAnchorDistance = fontSize * 0.6 + 2;
+        const labelGap = 8;
+        const LABEL_DISTANCE = isLandscape
+          ? seatAnchorDistance - labelGap + (40 + labelGap - seatAnchorDistance) / 5
+          : 40;
+        const direction = side === "first" ? -1 : 1;
+        labelX = isLandscape ? seatX : seatX + direction * LABEL_DISTANCE;
+        labelY = isLandscape ? seatY + direction * LABEL_DISTANCE : seatY;
       }
 
       return (
@@ -216,6 +232,32 @@ export const TableBox: React.FC<TableBoxProps> = ({
           offsetX={table.width! / 2}
           offsetY={table.height! / 2}
         />
+      )}
+
+      {/* 長机をくっつけたデザインの境界線 */}
+      {table.shape === "rectangle" && table.design === "joined" && (
+        <>
+          <Line
+            points={[0, -table.height! / 2, 0, table.height! / 2]}
+            stroke="#64748b"
+            strokeWidth={1}
+            listening={false}
+          />
+          <Line
+            points={[-table.width! / 2, 0, table.width! / 2, 0]}
+            stroke="#64748b"
+            strokeWidth={1}
+            listening={false}
+          />
+          <Rect
+            width={Math.min(table.width!, 120)}
+            height={fontSize * 2.6 + 4}
+            offsetX={Math.min(table.width!, 120) / 2}
+            y={-fontSize - 4}
+            fill={tableFill}
+            listening={false}
+          />
+        </>
       )}
 
       {/* === 中央テキスト === */}

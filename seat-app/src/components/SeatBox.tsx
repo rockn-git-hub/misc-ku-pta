@@ -204,6 +204,7 @@ const SeatRect: React.FC<{
       cornerRadius={6}
       shadowColor="#0f172a"
       shadowBlur={6}
+      shadowForStrokeEnabled={false}
       shadowOpacity={0.1}
       shadowOffsetY={1}
       offsetX={seatWidth / 2}
@@ -211,7 +212,7 @@ const SeatRect: React.FC<{
     />
     {/* 蠎ｧ蟶ｭ逡ｪ蜿ｷ */}
     <Text
-      text={`蟶ｭ${seatIndex + 1}`}
+      text={`席${seatIndex + 1}`}
       fontSize={fontSize}
       fill="black"
       align="center"
@@ -268,6 +269,7 @@ const SeatLabel: React.FC<{
         cornerRadius={8}
         shadowColor="#0f172a"
         shadowBlur={5}
+        shadowForStrokeEnabled={false}
         shadowOpacity={0.08}
         shadowOffsetY={1}
       />
