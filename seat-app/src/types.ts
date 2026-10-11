@@ -22,6 +22,7 @@ export interface Table {
   scaleX?: number;
   scaleY?: number;
   seats: number;
+  plannedSeats?: number; // 基本の席数
   seatsDetail: SeatDetail[];
   orientation?: "landscape" | "portrait";
 }
@@ -31,4 +32,5 @@ export type Participant = {
   name: string;
   attr1: string;
   attr2: string;
+  attending?: boolean; // 未指定は参加ON
 };

@@ -8,15 +8,20 @@
 // ============================================================
 
 import React from "react";
+import type Konva from "konva";
 import { Group, Rect, Text, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
+import { seatMetrics } from "../lib/seatGeometry";
+import type { SeatGeometry } from "../lib/seatGeometry";
 import type { Table } from "../types";
+import { SeatInteractionContext } from "./SeatInteractionContext";
 
 // ------------------------------------------------------------
 // Props 蝙句ｮ夂ｾｩ・亥ｾ捺擂縺ｮ蜻ｼ縺ｳ蜃ｺ縺怜・縺ｨ螳悟・莠呈鋤・・
 // ------------------------------------------------------------
 type SeatBoxProps = {
   table: Table; // 蟇ｾ雎｡縺ｮ繝・・繝悶Ν
+  geometry?: SeatGeometry;
   seatIndex: number; // 0-based 縺ｮ蠎ｧ蟶ｭ逡ｪ蜿ｷ
   seatX: number; // 繝・・繝悶Ν荳ｭ蠢・0,0)蝓ｺ貅悶・蠎ｧ蟶ｭX
   seatY: number; // 繝・・繝悶Ν荳ｭ蠢・0,0)蝓ｺ貅悶・蠎ｧ蟶ｭY
@@ -196,6 +201,7 @@ const SeatRect: React.FC<{
   <Group x={seatX} y={seatY} onClick={onClick}>
     {/* 蠎ｧ蟶ｭ遏ｩ蠖｢ */}
     <Rect
+      name="seat-body"
       width={seatWidth}
       height={seatHeight}
       fill="#ffffff"
@@ -240,6 +246,7 @@ const SeatLabel: React.FC<{
   padding: number;
   fontSize: number;
   text: string;
+  compact?: boolean;
 }> = ({
   seatX,
   seatY,
@@ -252,12 +259,13 @@ const SeatLabel: React.FC<{
   padding,
   fontSize,
   text,
+  compact,
 }) => {
   const outerW = rectWidth + padding * 2;
   const outerH = rectHeight + padding * 2;
   return (
     <>
-      <Line points={[seatX, seatY, endX, endY]} stroke="#94a3b8" strokeWidth={1} dash={[4, 4]} />
+      {!compact && <Line points={[seatX, seatY, endX, endY]} stroke="#94a3b8" strokeWidth={1} dash={[4, 4]} />}
       <Rect
         x={rectX}
         y={rectY}
@@ -290,6 +298,7 @@ const SeatLabel: React.FC<{
 // 繝｡繧､繝ｳ: SeatBox
 // ------------------------------------------------------------
 export const SeatBox: React.FC<SeatBoxProps> = (props) => {
+  const interaction = React.useContext(SeatInteractionContext);
   const {
     table,
     seatIndex,
@@ -305,22 +314,8 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
   } = props;
 
   // --- 陦ｨ遉ｺ螳壽焚 ---
-  const seatWidth = fontSize * 2.2;
-  const seatHeight = fontSize * 1.2;
-  const padding = 8;
-
-  // --- 繝ｩ繝吶Ν譁・ｭ怜・繧堤函謌撰ｼ育ｩｺ譁・ｭ励・髯､螟悶＠縺ｦ陦後↓縺吶ｋ・・---
-  const seat = table.seatsDetail[seatIndex];
-  const labelText = seat
-    ? [seat.attr1, seat.attr2, seat.name].filter((s) => s && s.trim() !== "").join("\n")
-    : "";
-
-  // --- 繝ｩ繝吶Ν蜀・・繧ｵ繧､繧ｺ・郁｡梧焚ﾃ励ヵ繧ｩ繝ｳ繝医∝ｹ・・譛髟ｷ陦鯉ｼ・---
-  const lines = labelText ? labelText.split("\n") : [""];
-  const maxChars = Math.max(...lines.map((l) => l.length), 1);
-  // 譁・ｭ怜ｹ・・邨碁ｨ灘援逧・↓ 0.75em 遞句ｺｦ繧呈治逕ｨ・亥ｿ・ｦ√↑繧牙ｰ・擂繝｡繧ｸ繝｣繝ｼ險域ｸｬ縺ｸ蟾ｮ縺玲崛縺亥庄閭ｽ・・
-  const rectWidth = fontSize * (maxChars * 0.75 + 2);
-  const rectHeight = fontSize * lines.length;
+  const metrics = seatMetrics(table, seatIndex, fontSize, interaction ?? { showNames: true });
+  const { seatWidth, seatHeight, padding, text: labelText, rectWidth, rectHeight } = metrics;
 
   // --- 蜀・酷莉･螟悶・縲後⊇縺ｼ豌ｴ蟷ｳ/蝙ら峩縲阪・險ｱ螳ｹ蟷・ｒ蠎・￥縺励※繝代ち縺､縺阪ｒ謚代∴繧・---
   let epsilon = 20;
@@ -345,7 +340,8 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
   );
 
   // --- 繝ｩ繝吶Ν遏ｩ蠖｢ 蟾ｦ荳・---
-  const { rectX, rectY } = calculateLabelPosition(
+  const { x: rectX, y: rectY } = props.geometry?.label ?? (() => {
+    const position = calculateLabelPosition(
     seatX,
     seatY,
     labelX,
@@ -357,7 +353,9 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
     epsilonV,
     labelMode,
     "center"
-  );
+    );
+    return { x: position.rectX, y: position.rectY };
+  })();
 
   // --- 繝ｩ繝吶Ν蛛ｴ縺ｮ轤ｹ・育せ邱壹・邨らせ・・---
   const outerW = rectWidth + padding * 2;
@@ -391,9 +389,18 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
     selectedSeat.tableIndex === tables.findIndex((t) => t.id === table.id) &&
     selectedSeat.seatIndex === seatIndex;
 
-  // --- クリックで「選択 → 入替」 ---
+  // --- 繧ｯ繝ｪ繝・け縺ｧ縲碁∈謚・竊・蜈･譖ｿ縲・---
   const handleClick = (e: KonvaEventObject<MouseEvent>) => {
-    e.cancelBubble = true; // テーブル全体へのイベント伝播を防止
+    if (interaction) {
+      e.cancelBubble = true;
+      if (interaction.mode === "layout" && e.evt.ctrlKey) {
+        interaction.selectTable(table.id, true);
+        return;
+      }
+      interaction.swapSeat(table.id, seatIndex);
+      return;
+    }
+    e.cancelBubble = true; // 繝・・繝悶Ν蜈ｨ菴薙∈縺ｮ繧､繝吶Φ繝井ｼ晄眺繧帝亟豁｢
 
     const targetTableId = table.id;
     const targetSeatIndex = seatIndex;
@@ -452,9 +459,25 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
     setSelectedSeat(null);
   };
 
+  /** 氏名の枠から着席編集を開き、卓へのクリック伝播を抑止 */
+  const handleLabelClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (!interaction) return;
+    e.cancelBubble = true;
+    if (interaction.mode === "layout" && e.evt.ctrlKey) {
+      interaction.selectTable(table.id, true);
+      return;
+    }
+    interaction.selectSeat(table.id, seatIndex);
+  };
+
+  /** 同じ席の連続クリックが卓のダブルクリック処理へ伝わることを防止 */
+  const handleDoubleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    e.cancelBubble = true;
+  };
+
   // --- 謠冗判 ---
   return (
-    <Group>
+    <Group onClick={interaction ? handleLabelClick : undefined} onDblClick={interaction ? handleDoubleClick : undefined}>
       {/* 蠎ｧ蟶ｭ繝懊ャ繧ｯ繧ｹ */}
       <SeatRect
         seatIndex={seatIndex}
@@ -480,6 +503,7 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
           rectHeight={rectHeight}
           padding={padding}
           fontSize={fontSize}
+          compact={!!props.geometry}
           text={labelText}
         />
       )}

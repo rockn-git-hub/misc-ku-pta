@@ -12,10 +12,13 @@ export type SaveSchemaV1 = {
   updatedAt: string; // ISO文字列（デバッグ/将来用途）
   orientation: Orientation; // ページ向き
   scale?: number; // ページ拡大率（現状未使用なら省略可）
+  titleFontSize?: number; // 用紙タイトルの独立した文字サイズ
   fontSize?: number; // ← 追加：フォントサイズを保存
   tables: Table[]; // キャンバス上のテーブルと座席情報を丸ごと
   participants?: Participant[]; // 参加者リスト
   title?: string; // 追加：席次表タイトル
+  showNames?: boolean;
+  attributeLabels?: [string, string];
 };
 
 const STORAGE_KEY = "seatAppData";

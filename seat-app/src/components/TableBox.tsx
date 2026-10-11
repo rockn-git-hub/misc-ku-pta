@@ -4,6 +4,9 @@ import { Group, Rect, Circle, Text, Line } from "react-konva";
 import type Konva from "konva";
 import type { Table } from "../types";
 import { SeatBox } from "./SeatBox";
+import { buildSeatGeometry } from "../lib/seatGeometry";
+import type { SeatDisplay } from "../lib/seatGeometry";
+import { SeatInteractionContext } from "./SeatInteractionContext";
 
 type TableBoxProps = {
   table: Table;
@@ -22,140 +25,37 @@ type TableBoxProps = {
   shapeRefs: React.RefObject<Record<string, Konva.Group>>;
 };
 
-// === 円卓用 ===
-function renderCircleSeats(
+/** 卓の縁と名札の寸法から全席の描画位置を生成 */
+function renderTableSeats(
   table: Table,
   fontSize: number,
   tables: Table[],
   selectedSeat: { tableIndex: number; seatIndex: number } | null,
-  setSelectedSeat: React.Dispatch<
-    React.SetStateAction<{ tableIndex: number; seatIndex: number } | null>
-  >,
-  setTables: React.Dispatch<React.SetStateAction<Table[]>>
+  setSelectedSeat: React.Dispatch<React.SetStateAction<{ tableIndex: number; seatIndex: number } | null>>,
+  setTables: React.Dispatch<React.SetStateAction<Table[]>>,
+  display: SeatDisplay
 ) {
-  return Array.from({ length: table.seats }).map((_, i) => {
-    const step = (2 * Math.PI) / table.seats; // 1席ぶんの角度
-    const startAngle = -Math.PI / 2 + step / 2;
-    const angle = startAngle + step * i; // 時計回りに並べる（※重要）
-    const radius = table.radius! + 24 / 2 + 30;
-    const seatX = Math.cos(angle) * radius;
-    const seatY = Math.sin(angle) * radius;
-    const labelX = seatX + Math.cos(angle) * 30;
-    const labelY = seatY + Math.sin(angle) * 30;
-
-    return (
-      <SeatBox
-        key={`circle-${i}`}
-        table={table}
-        seatIndex={i}
-        seatX={seatX}
-        seatY={seatY}
-        labelX={labelX}
-        labelY={labelY}
-        tables={tables}
-        selectedSeat={selectedSeat}
-        setSelectedSeat={setSelectedSeat}
-        setTables={setTables}
-        fontSize={fontSize}
-      />
-    );
-  });
+  return buildSeatGeometry(table, fontSize, display).map((geometry, i) => <SeatBox
+    key={i} table={table} seatIndex={i} seatX={geometry.x} seatY={geometry.y}
+    labelX={geometry.label.x} labelY={geometry.label.y} geometry={geometry}
+    tables={tables} selectedSeat={selectedSeat} setSelectedSeat={setSelectedSeat}
+    setTables={setTables} fontSize={fontSize}
+  />);
 }
 
-// === 長方形用 ===
-function renderRectSeats(
-  table: Table,
-  fontSize: number,
-  tables: Table[],
-  selectedSeat: { tableIndex: number; seatIndex: number } | null,
-  setSelectedSeat: React.Dispatch<
-    React.SetStateAction<{ tableIndex: number; seatIndex: number } | null>
-  >,
-  setTables: React.Dispatch<React.SetStateAction<Table[]>>
-) {
-  const isLandscape = table.orientation === "landscape";
-  const mainLen = isLandscape ? table.width! : table.height!;
-  const sideLen = isLandscape ? table.height! : table.width!;
-
-  const firstSide = Math.ceil(table.seats / 2);
-  const secondSide = Math.floor(table.seats / 2);
-
-  const makeSeats = (count: number, offset: number, side: "first" | "second") =>
-    Array.from({ length: count }).map((_, i) => {
-      const EDGE_MARGIN = 30; // 端からの余白(px) ← ここを調整
-      const usable = Math.max(0, mainLen - EDGE_MARGIN * 2);
-      const spacing = count > 1 ? usable / (count - 1) : 0;
-      // くっつけた長机では等分した各区画の中央に配置
-      const along = table.design === "joined"
-        ? -mainLen / 2 + (mainLen / count) * (i + 0.5)
-        : -mainLen / 2 + EDGE_MARGIN + spacing * i;
-
-      let seatX = 0,
-        seatY = 0,
-        labelX = 0,
-        labelY = 0;
-
-      if (isLandscape) {
-        // 横長 → 上下
-        seatX = along;
-        seatY = side === "first" ? -sideLen / 2 - 30 : sideLen / 2 + 30;
-
-        // === ベクトル延長でラベル配置 ===
-        const LABEL_DISTANCE = 40; // 座席からラベルまでの距離
-        const dx = seatX; // 中心(0,0)→座席 のX成分
-        const dy = seatY; // 中心(0,0)→座席 のY成分
-        const len = Math.sqrt(dx * dx + dy * dy) || 1; // ベクトル長
-        labelX = seatX + (dx / len) * LABEL_DISTANCE;
-        labelY = seatY + (dy / len) * LABEL_DISTANCE;
-      } else {
-        // 縦長 → 左右
-        seatX = side === "first" ? -sideLen / 2 - 30 : sideLen / 2 + 30;
-        seatY = along;
-
-        // === ベクトル延長でラベル配置 ===
-        const LABEL_DISTANCE = 40; // 座席からラベルまでの距離
-        const dx = seatX;
-        const dy = seatY;
-        const len = Math.sqrt(dx * dx + dy * dy) || 1;
-        labelX = seatX + (dx / len) * LABEL_DISTANCE;
-        labelY = seatY + (dy / len) * LABEL_DISTANCE;
-      }
-
-      // くっつけた長机のラベルを各座席の正面に整列
-      if (table.design === "joined") {
-        // 横長机では座席の外縁から氏名枠までの点線を1/5に短縮
-        const seatAnchorDistance = fontSize * 0.6 + 2;
-        const labelGap = 8;
-        const LABEL_DISTANCE = isLandscape
-          ? seatAnchorDistance - labelGap + (40 + labelGap - seatAnchorDistance) / 5
-          : 40;
-        const direction = side === "first" ? -1 : 1;
-        labelX = isLandscape ? seatX : seatX + direction * LABEL_DISTANCE;
-        labelY = isLandscape ? seatY + direction * LABEL_DISTANCE : seatY;
-      }
-
-      return (
-        <SeatBox
-          key={`${side}-${i}`}
-          table={table}
-          seatIndex={offset + i}
-          seatX={seatX}
-          seatY={seatY}
-          labelX={labelX}
-          labelY={labelY}
-          tables={tables}
-          selectedSeat={selectedSeat}
-          setSelectedSeat={setSelectedSeat}
-          setTables={setTables}
-          fontSize={fontSize}
-        />
-      );
-    });
-
-  return [
-    ...makeSeats(firstSide, 0, "first"),
-    ...makeSeats(secondSide, firstSide, "second"),
-  ];
+/** 卓本体・席番号・表示中の名札を含む選択枠の範囲 */
+function selectionBounds(table: Table, fontSize: number, display: SeatDisplay) {
+  const width = table.shape === "circle" ? (table.radius ?? 117) * 2 : table.width ?? 270;
+  const height = table.shape === "circle" ? (table.radius ?? 117) * 2 : table.height ?? 140;
+  let left = -width / 2, top = -height / 2, right = width / 2, bottom = height / 2;
+  for (const seat of buildSeatGeometry(table, fontSize, display)) {
+    for (const box of [seat.number, ...(seat.text ? [seat.label] : [])]) {
+      left = Math.min(left, box.x); top = Math.min(top, box.y);
+      right = Math.max(right, box.x + box.width); bottom = Math.max(bottom, box.y + box.height);
+    }
+  }
+  const padding = 12;
+  return { x: left - padding, y: top - padding, width: right - left + padding * 2, height: bottom - top + padding * 2 };
 }
 
 export const TableBox: React.FC<TableBoxProps> = ({
@@ -172,10 +72,13 @@ export const TableBox: React.FC<TableBoxProps> = ({
   selectedId,
   shapeRefs,
 }) => {
-  const isSelected = selectedId === table.id;
+  const interaction = React.useContext(SeatInteractionContext);
+  const isSelected = interaction ? interaction.selectedTableIds.includes(table.id) : selectedId === table.id;
   const tableStroke = isSelected ? "#0284c7" : "#64748b";
   const tableStrokeWidth = isSelected ? 3 : 1.5;
   const tableFill = table.shape === "circle" ? "#dbeafe" : "#bbf7d0";
+  const selection = isSelected ? selectionBounds(table, fontSize, interaction ?? { showNames: true }) : null;
+  const selectionFontSize = Math.max(fontSize, 28);
 
   return (
     <Group
@@ -185,20 +88,30 @@ export const TableBox: React.FC<TableBoxProps> = ({
       }}
       x={table.x}
       y={table.y}
-      draggable
+      draggable={!interaction || interaction.mode === "layout"}
       onClick={(e) => {
         e.cancelBubble = true; // ← これを追加！
-        setSelectedId(table.id);
+        if (interaction) interaction.selectTable(table.id, e.evt.ctrlKey);
+        else setSelectedId(table.id);
         if (isSeatModalOpen) setFocusTableId(table.id);
       }}
-      onDblClick={() => {
+      onDblClick={(e) => {
+        // ワークスペースではクリック側の選択処理を維持
+        if (interaction) { e.cancelBubble = true; return; }
         setSelectedId(table.id);
         setFocusTableId(table.id);
-        window.openSeatModal?.(table.id);
+        (window as Window & { openSeatModal?: (id: string) => void }).openSeatModal?.(table.id);
       }}
-      onDragEnd={(e) =>
-        updateTable(table.id, { x: e.target.x(), y: e.target.y() })
-      }
+      onDragStart={(e) => {
+        if (interaction) interaction.dragTable(table.id, "start", e.target.x(), e.target.y());
+      }}
+      onDragMove={(e) => {
+        if (interaction) interaction.dragTable(table.id, "move", e.target.x(), e.target.y());
+      }}
+      onDragEnd={(e) => {
+        if (interaction) interaction.dragTable(table.id, "end", e.target.x(), e.target.y());
+        else updateTable(table.id, { x: e.target.x(), y: e.target.y() });
+      }}
       onTransformEnd={(e) => {
         const node = e.target;
         if (table.shape === "circle") {
@@ -213,9 +126,17 @@ export const TableBox: React.FC<TableBoxProps> = ({
         node.scaleY(1);
       }}
     >
+      {/* 操作を遮らない選択卓ごとの外枠と背景 */}
+      {selection && <Group name="selection-overlay" listening={false}>
+        <Rect {...selection} fill="rgba(14, 165, 233, 0.10)" stroke="#0ea5e9" strokeWidth={3} strokeScaleEnabled={false} cornerRadius={10} />
+        <Rect x={selection.x} y={selection.y - selectionFontSize - 12} width={selectionFontSize * 3 + 20} height={selectionFontSize + 12} fill="#0284c7" cornerRadius={[6, 6, 0, 0]} />
+        <Text x={selection.x + 10} y={selection.y - selectionFontSize - 6} text="選択中" fontSize={selectionFontSize} fontStyle="bold" fill="#ffffff" />
+      </Group>}
+
       {/* === テーブルの図形 === */}
       {table.shape === "circle" ? (
         <Circle
+          name="table-body"
           radius={table.radius!}
           fill={tableFill}
           stroke={tableStroke}
@@ -223,6 +144,7 @@ export const TableBox: React.FC<TableBoxProps> = ({
         />
       ) : (
         <Rect
+          name="table-body"
           width={table.width}
           height={table.height}
           fill={tableFill}
@@ -283,23 +205,8 @@ export const TableBox: React.FC<TableBoxProps> = ({
       )}
 
       {/* === 座席群 === */}
-      {table.shape === "circle"
-        ? renderCircleSeats(
-            table,
-            fontSize,
-            tables,
-            selectedSeat,
-            setSelectedSeat,
-            setTables
-          )
-        : renderRectSeats(
-            table,
-            fontSize,
-            tables,
-            selectedSeat,
-            setSelectedSeat,
-            setTables
-          )}
+      {renderTableSeats(table, fontSize, tables, selectedSeat, setSelectedSeat, setTables,
+        interaction ?? { showNames: true })}
     </Group>
   );
 };

@@ -295,6 +295,10 @@ export function exportPdf(
     const y = (pageHeight - h) / 2;
 
     pdf.addImage(dataUrl, "JPEG", x, y, w, h, undefined, "FAST");
+    // キャンバス倍率に依存しないPDF右下のクレジット
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 116, 139);
+    pdf.text("© 2025–2026 Hamster", pageWidth - 12, pageHeight - 12, { align: "right" });
     pdf.save(`${safeTitle}.pdf`); // ✅ タイトルベースのファイル名
   };
 

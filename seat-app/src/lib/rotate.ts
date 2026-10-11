@@ -21,6 +21,7 @@ export function rotateTablesForOrientationChange(
   fromSize: { width: number; height: number },
   toSize: { width: number; height: number }
 ): Table[] {
+  if (from === to) return tables;
   const fromCenter = { x: fromSize.width / 2, y: fromSize.height / 2 };
   const toCenter = { x: toSize.width / 2, y: toSize.height / 2 };
 
@@ -45,6 +46,8 @@ export function rotateTablesForOrientationChange(
       ...t,
       x: newX,
       y: newY,
+      width: t.shape === "rectangle" ? t.height : t.width,
+      height: t.shape === "rectangle" ? t.width : t.height,
       orientation:
         t.shape === "rectangle"
           ? t.orientation === "landscape"
