@@ -655,7 +655,8 @@ export function SeatWorkspace() {
     copy.find("Transformer").forEach(node => node.destroy());
     copy.find(".selection-overlay").forEach(node => node.destroy());
     copy.find<Konva.Shape>(".table-body").forEach(node => { node.stroke("#64748b"); node.strokeWidth(1.5); });
-    copy.find<Konva.Shape>(".seat-body").forEach(node => { node.stroke("#64748b"); node.strokeWidth(1.25); });
+    copy.find<Konva.Shape>(".seat-body").forEach(node => { node.stroke("#64748b"); node.strokeWidth(1.25); node.fill("#ffffff"); });
+    copy.find<Konva.Text>(".seat-number").forEach(node => node.fill("black"));
     copy.draw(); exportPdf(copy, data.orientation, data.title); copy.destroy();
   }
 
@@ -821,9 +822,9 @@ export function SeatWorkspace() {
   const sceneSelectTable = useCallback((id: string, additive = false) => sceneActions.current.selectTable(id, additive), []);
   const sceneDragTable = useCallback((id: string, phase: "start" | "move" | "end", x: number, y: number) => sceneActions.current.dragTable(id, phase, x, y), []);
   // 拡縮とスクロールでは卓・席のReact要素と参加者照合を再生成しない描画内容
-  const diagram = useMemo(() => <SeatInteractionContext.Provider value={{ mode, selectedTableIds, selectTable: sceneSelectTable, dragTable: sceneDragTable, showNames: data.showNames, participants: data.participants, selectSeat: sceneSelectSeat, swapSeat: sceneSwapSeat }}>
+  const diagram = useMemo(() => <SeatInteractionContext.Provider value={{ mode, selectedTableIds, swapFrom, selectTable: sceneSelectTable, dragTable: sceneDragTable, showNames: data.showNames, participants: data.participants, selectSeat: sceneSelectSeat, swapSeat: sceneSwapSeat }}>
     {displayTables.map(t => <TableBox key={t.id} table={t} fontSize={displayFontSize} tables={displayTables} selectedSeat={legacySeat} setSelectedSeat={ignoreSelection} setTables={sceneSetTables} setSelectedId={sceneSelectTable} updateTable={sceneUpdateTable} isSeatModalOpen={false} setFocusTableId={ignoreSelection} selectedId={selectedId} shapeRefs={shapeRefs} />)}
-  </SeatInteractionContext.Provider>, [mode, selectedTableIds, data.showNames, data.participants, displayTables, displayFontSize, legacySeat, selectedId, sceneSelectSeat, sceneSwapSeat, sceneSetTables, sceneSelectTable, sceneUpdateTable, sceneDragTable]);
+  </SeatInteractionContext.Provider>, [mode, selectedTableIds, swapFrom, data.showNames, data.participants, displayTables, displayFontSize, legacySeat, selectedId, sceneSelectSeat, sceneSwapSeat, sceneSetTables, sceneSelectTable, sceneUpdateTable, sceneDragTable]);
 
   /** 会場図のドラッグ処理が既定のフォーカス移動を止める前に入力を確定 */
   function blurOutsideField(event: ReactPointerEvent<HTMLDivElement>) {
@@ -847,7 +848,7 @@ export function SeatWorkspace() {
         <button onClick={() => { setImportMode("roster"); setOtherMenu(false); fileInput.current!.accept = ".xlsx"; fileInput.current?.click(); }}>席次だけ読み込む</button>
         <hr /><button className="danger" onClick={() => { setOtherMenu(false); setConfirmation({ title: "新規作成", message: "机・参加者名簿・操作履歴をすべて消去します。この操作は元に戻せません。必要なら先にExcelまたはJSONへ保存してください。", accept: () => { replace(blankDocument()); setSelectedId(null); setSelectedSeat(null); setSwapFrom(null); setCanvasOrigin(null); fitted.current = false; } }); }}>新規作成</button>
       </div>}</div></div><details ref={settingsMenuAnchor} className="menu-anchor settings-menu"><summary>設定 ▾</summary><div className="dropdown"><button onClick={e => { e.currentTarget.closest("details")?.removeAttribute("open"); setSettings(true); }}>属性の見出し</button></div></details><div className="history-buttons"><button aria-label="↶ 元に戻す" title="元に戻す (Ctrl+Z)" disabled={!history.canUndo} onClick={() => { history.undo(); setSwapFrom(null); }}>↶</button><button aria-label="↷ やり直す" title="やり直す (Ctrl+Y)" disabled={!history.canRedo} onClick={() => { history.redo(); setSwapFrom(null); }}>↷</button></div>
-      <div className="mode-switch"><button aria-pressed={mode === "layout"} onClick={() => { setMode("layout"); setSelectedSeat(null); setSwapFrom(null); }}>配置</button><button aria-pressed={mode === "seating"} onClick={() => { setMode("seating"); setSelectedId(selectedId); setRangeActive(false); }}>席次</button></div>
+      <div className="mode-switch"><button title="配置：卓を動かす・サイズや位置を整える" aria-pressed={mode === "layout"} onClick={() => { setMode("layout"); setSelectedSeat(null); setSwapFrom(null); }}>配置</button><button title="席次：参加者を編集する・席を入れ替える（卓はドラッグしない）" aria-pressed={mode === "seating"} onClick={() => { setMode("seating"); setSelectedId(selectedId); setRangeActive(false); }}>席次</button></div>
       <div ref={addMenuAnchor} className="menu-anchor"><button className="primary toolbar-icon" aria-label="卓追加" title="卓追加" aria-expanded={addMenu} onClick={() => setAddMenu(!addMenu)}><MenuIcon name="add-table" /></button>{addMenu && <div className="dropdown">{[["circle", "円卓"], ["square", "正方形"], ["rectangle", "長机"], ["joined", "くっつけた長机"]].map(([value, name]) => <button key={value} onClick={() => addTable(value)}>{name}</button>)}</div>}</div>
       {mode === "layout" && <button className="toolbar-icon" aria-label="範囲選択" aria-pressed={rangeActive} title="範囲選択：余白からドラッグして卓を囲む (Shift+ドラッグでも選択可能)" onClick={() => setRangeActive(!rangeActive)}><MenuIcon name="range-select" /></button>}
       <button className="toolbar-icon" aria-label="参加者名簿" title="参加者名簿" onClick={() => { setPeopleQuery(""); setPeopleOpen("all"); }}><MenuIcon name="participants" /></button>

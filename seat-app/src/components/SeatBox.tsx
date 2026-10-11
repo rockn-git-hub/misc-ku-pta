@@ -196,16 +196,17 @@ const SeatRect: React.FC<{
   seatHeight: number;
   fontSize: number;
   isSelected: boolean;
+  isSwapSource: boolean;
   onClick: (e: KonvaEventObject<MouseEvent>) => void;
-}> = ({ seatIndex, seatX, seatY, seatWidth, seatHeight, fontSize, isSelected, onClick }) => (
+}> = ({ seatIndex, seatX, seatY, seatWidth, seatHeight, fontSize, isSelected, isSwapSource, onClick }) => (
   <Group x={seatX} y={seatY} onClick={onClick}>
     {/* 蠎ｧ蟶ｭ遏ｩ蠖｢ */}
     <Rect
       name="seat-body"
       width={seatWidth}
       height={seatHeight}
-      fill="#ffffff"
-      stroke={isSelected ? "#0284c7" : "#64748b"}
+      fill={isSwapSource ? "#dc2626" : "#ffffff"}
+      stroke={isSwapSource ? "#b91c1c" : isSelected ? "#0284c7" : "#64748b"}
       strokeWidth={isSelected ? 2.2 : 1.25}
       cornerRadius={6}
       shadowColor="#0f172a"
@@ -218,9 +219,10 @@ const SeatRect: React.FC<{
     />
     {/* 蠎ｧ蟶ｭ逡ｪ蜿ｷ */}
     <Text
+      name="seat-number"
       text={`席${seatIndex + 1}`}
       fontSize={fontSize}
-      fill="black"
+      fill={isSwapSource ? "#ffffff" : "black"}
       align="center"
       verticalAlign="middle"
       width={seatWidth}
@@ -487,6 +489,7 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
         seatHeight={seatHeight}
         fontSize={fontSize}
         isSelected={!!isSelected}
+        isSwapSource={interaction?.swapFrom?.tableId === table.id && interaction.swapFrom.seatIndex === seatIndex}
         onClick={handleClick}
       />
 

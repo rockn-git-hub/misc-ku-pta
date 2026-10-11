@@ -73,7 +73,7 @@ export const TableBox: React.FC<TableBoxProps> = ({
   shapeRefs,
 }) => {
   const interaction = React.useContext(SeatInteractionContext);
-  const isSelected = interaction ? interaction.selectedTableIds.includes(table.id) : selectedId === table.id;
+  const isSelected = interaction ? !interaction.swapFrom && interaction.selectedTableIds.includes(table.id) : selectedId === table.id;
   const tableStroke = isSelected ? "#0284c7" : "#64748b";
   const tableStrokeWidth = isSelected ? 3 : 1.5;
   const tableFill = table.shape === "circle" ? "#dbeafe" : "#bbf7d0";

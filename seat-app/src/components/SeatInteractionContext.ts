@@ -4,6 +4,7 @@ import type { Participant } from "../types";
 export type SeatInteraction = {
   mode: "layout" | "seating";
   selectedTableIds: string[];
+  swapFrom: { tableId: string; seatIndex: number } | null;
   selectTable: (tableId: string, additive?: boolean) => void;
   dragTable: (tableId: string, phase: "start" | "move" | "end", x: number, y: number) => void;
   showNames: boolean;
