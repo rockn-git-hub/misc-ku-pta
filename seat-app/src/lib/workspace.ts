@@ -40,6 +40,7 @@ export function normalizeDocument(input: SaveSchemaV1): DocumentState {
     if (!alias || names.has(alias) || !t.id || tableIds.has(t.id)) throw new Error(`テーブル名またはIDが空欄・重複しています：${alias}`);
     names.add(alias); tableIds.add(t.id);
     if (!Number.isInteger(t.seats) || t.seats < 0 || t.seats > 100) throw new Error(`${alias}：席数は0〜100の整数にしてください`);
+    if (t.joinedLayout && (!Number.isInteger(t.joinedLayout.firstSeats) || t.joinedLayout.firstSeats < 0 || t.joinedLayout.firstSeats > 100 || typeof t.joinedLayout.firstReversed !== "boolean" || typeof t.joinedLayout.secondReversed !== "boolean")) throw new Error(`${alias}：連結机の席配置が不正です`);
     if (!["circle", "square", "rectangle"].includes(t.shape) || !Number.isFinite(t.x) || !Number.isFinite(t.y)) throw new Error(`${alias}：形状・座標が不正です`);
     const dimensions = t.shape === "circle" ? [t.radius] : [t.width, t.height];
     if (dimensions.some(n => typeof n !== "number" || !Number.isFinite(n) || n <= 0)) throw new Error(`${alias}：寸法は正の数にしてください`);

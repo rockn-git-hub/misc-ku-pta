@@ -34,6 +34,31 @@ export function seatMetrics(table: Table, index: number, fontSize: number, displ
     seatWidth: Math.ceil(Math.max(fontSize * 2.2, textWidth(`席${index + 1}`, fontSize) + 8)), seatHeight: Math.ceil(fontSize * 1.2) };
 }
 
+/** 連結卓の席数変更にも追従する2台の構成 */
+export function joinedLayout(table: Table) {
+  const firstSeats = Math.min(table.seats, table.joinedLayout?.firstSeats ?? Math.ceil(table.seats / 2));
+  return { firstSeats, firstReversed: table.joinedLayout?.firstReversed ?? false,
+    secondReversed: table.joinedLayout?.secondReversed ?? (firstSeats % 2 === 1 && (table.seats - firstSeats) % 2 === 1) };
+}
+
+/** 席順を維持した各辺・各机の連続範囲 */
+function seatGroups(table: Table) {
+  if (table.shape !== "rectangle" || table.design !== "joined") {
+    const split = Math.ceil(table.seats / 2);
+    return [{ offset: 0, count: split, direction: -1, start: -0.5, span: 1 }, { offset: split, count: table.seats - split, direction: 1, start: -0.5, span: 1 }];
+  }
+  const layout = joinedLayout(table), second = table.seats - layout.firstSeats;
+  const firstTop = layout.firstReversed ? Math.floor(layout.firstSeats / 2) : Math.ceil(layout.firstSeats / 2);
+  const secondTop = layout.secondReversed ? Math.floor(second / 2) : Math.ceil(second / 2);
+  const counts = [firstTop, secondTop, layout.firstSeats - firstTop, second - secondTop];
+  let offset = 0;
+  return counts.map((count, index) => {
+    const group = { offset, count, direction: index < 2 ? -1 : 1, start: index % 2 === 0 ? -0.5 : 0, span: 0.5 };
+    offset += count;
+    return group;
+  });
+}
+
 /** 縁に重ねた席番号と、外側に隣接する名札の位置 */
 export function buildSeatGeometry(table: Table, fontSize: number, display: SeatDisplay): SeatGeometry[] {
   const metrics = Array.from({ length: table.seats }, (_, i) => seatMetrics(table, i, fontSize, display));
@@ -49,15 +74,14 @@ export function buildSeatGeometry(table: Table, fontSize: number, display: SeatD
   const horizontal = table.shape !== "square" && table.orientation !== "portrait";
   const main = horizontal ? table.width ?? 270 : table.height ?? 200;
   const cross = horizontal ? table.height ?? 140 : table.width ?? 200;
-  const split = Math.ceil(table.seats / 2);
+  const groups = seatGroups(table);
   return metrics.map((m, i) => {
-    const offset = i < split ? 0 : split, count = i < split ? split : table.seats - split;
+    const { offset, count, direction, start, span } = groups.find(group => i >= group.offset && i < group.offset + group.count)!;
     const side = metrics.slice(offset, offset + count);
     const cells = side.map(item => Math.max(horizontal ? item.width : item.height, horizontal ? item.seatWidth : item.seatHeight) + GAP);
     const total = cells.reduce((sum, size) => sum + size, 0);
     const before = cells.slice(0, i - offset).reduce((sum, size) => sum + size, 0);
-    const along = -main / 2 + main * (before + cells[i - offset] / 2) / total;
-    const direction = i < split ? -1 : 1;
+    const along = main * start + main * span * (before + cells[i - offset] / 2) / total;
     const x = horizontal ? along : direction * cross / 2, y = horizontal ? direction * cross / 2 : along;
     const labelX = horizontal ? x - m.width / 2 : direction < 0 ? x - m.seatWidth / 2 - GAP - m.width : x + m.seatWidth / 2 + GAP;
     const labelY = horizontal ? direction < 0 ? y - m.seatHeight / 2 - GAP - m.height : y + m.seatHeight / 2 + GAP : y - m.height / 2;
@@ -101,9 +125,8 @@ export function fitTableToLabels(table: Table, fontSize: number, display: SeatDi
     return { radius: high };
   }
   const horizontal = table.shape !== "square" && table.orientation !== "portrait";
-  const split = Math.ceil(table.seats / 2);
   const cells = metrics.map(m => Math.max(horizontal ? m.width : m.height, horizontal ? m.seatWidth : m.seatHeight) + GAP);
-  const main = Math.ceil(Math.max(cells.slice(0, split).reduce((a, b) => a + b, 0), cells.slice(split).reduce((a, b) => a + b, 0))) + 1;
+  const main = Math.ceil(Math.max(...seatGroups(table).map(group => cells.slice(group.offset, group.offset + group.count).reduce((a, b) => a + b, 0) / group.span))) + 1;
   if (table.shape === "square") {
     const side = Math.max(main, titleWidth + seatWidth, titleHeight + seatHeight);
     return { width: side, height: side };

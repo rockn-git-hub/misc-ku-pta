@@ -12,7 +12,7 @@ import { downloadDocument, downloadWorkbook, readImport } from "../lib/workbook"
 import type { ImportPreview } from "../lib/workbook";
 import { exportPdf } from "../lib/io";
 import { rotateTablesForOrientationChange } from "../lib/rotate";
-import { fitTableToLabels } from "../lib/seatGeometry";
+import { fitTableToLabels, joinedLayout } from "../lib/seatGeometry";
 import { arrangeTables, detectTableColumns } from "../lib/tableLayout";
 import type { Participant, Table } from "../types";
 import "../workspace.css";
@@ -914,6 +914,24 @@ export function SeatWorkspace() {
           <label className="field">形状<select value={table.design === "joined" ? "joined" : table.shape} onChange={e => changeShape(e.target.value)}><option value="circle">円卓</option><option value="square">正方形</option><option value="rectangle">長机</option><option value="joined">くっつけた長机</option></select></label>
           {table.shape === "rectangle" && <label className="field">向き<select value={table.orientation ?? "landscape"} onChange={e => { if (e.target.value !== table.orientation) updateTable(table.id, { orientation: e.target.value as Table["orientation"], width: table.height, height: table.width }); }}><option value="landscape">横</option><option value="portrait">縦</option></select></label>}
           <EditField key={`seats-${table.id}`} label="席数" type="number" min={0} max={100} step={1} integer value={table.seats} onPreview={value => previewTableNumber("seats", value)} onCommit={changeSeats} /><small>予定席数：{displayTable?.plannedSeats ?? table.plannedSeats ?? table.seats}</small>
+          {table.shape === "rectangle" && table.design === "joined" && <section className="seat-editor">
+            <h3>左右・上下の席数</h3>
+            <p className="muted">参加者の並び順を保ち、席の配分を変更します。</p>
+            <EditField label={table.orientation === "portrait" ? "上の机の席数" : "左の机の席数"} type="number" min={0} max={table.seats} step={1} integer value={joinedLayout(table).firstSeats} onCommit={value => updateTable(table.id, { joinedLayout: { ...joinedLayout(table), firstSeats: Number(value) } })} />
+            <p>{table.orientation === "portrait" ? "下" : "右"}の机：{table.seats - joinedLayout(table).firstSeats}席（合計{table.seats}席）</p>
+            <div className="table-actions" style={{ gridTemplateColumns: "1fr" }}>
+              <button onClick={() => { const layout = joinedLayout(table); updateTable(table.id, { joinedLayout: { firstSeats: table.seats - layout.firstSeats, firstReversed: layout.secondReversed, secondReversed: layout.firstReversed } }); }}>{table.orientation === "portrait" ? "上" : "左"}{table.seats - joinedLayout(table).firstSeats}席・{table.orientation === "portrait" ? "下" : "右"}{joinedLayout(table).firstSeats}席にする</button>
+              {(["firstReversed", "secondReversed"] as const).map((key, index) => {
+                const layout = joinedLayout(table);
+                const count = index === 0 ? layout.firstSeats : table.seats - layout.firstSeats;
+                if (count % 2 === 0) return null;
+                const vertical = table.orientation === "portrait";
+                const position = vertical ? index === 0 ? "上" : "下" : index === 0 ? "左" : "右";
+                const nextFirst = layout[key] ? Math.ceil(count / 2) : Math.floor(count / 2);
+                return <button key={key} onClick={() => updateTable(table.id, { joinedLayout: { ...layout, [key]: !layout[key] } })}>{position}の机：{vertical ? "左" : "上"}{nextFirst}席・{vertical ? "右" : "下"}{count - nextFirst}席にする</button>;
+              })}
+            </div>
+          </section>}
           {table.shape === "circle" ? <EditField label="半径" min={1} step={1} value={table.radius ?? 117} type="number" onPreview={value => previewTableNumber("radius", value)} onCommit={v => updateTable(table.id, { radius: Number(v) })} /> : <div className="field-grid"><EditField label="幅" min={1} step={1} value={table.width ?? 270} type="number" onPreview={value => previewTableNumber("width", value)} onCommit={v => updateTable(table.id, { width: Number(v) })} /><EditField label="高さ" min={1} step={1} value={table.height ?? 140} type="number" onPreview={value => previewTableNumber("height", value)} onCommit={v => updateTable(table.id, { height: Number(v) })} /></div>}
           <details><summary>座標</summary><EditField label="X座標" step={1} value={table.x} type="number" onPreview={value => previewTableNumber("x", value)} onCommit={v => updateTable(table.id, { x: Number(v) })} /><EditField label="Y座標" step={1} value={table.y} type="number" onPreview={value => previewTableNumber("y", value)} onCommit={v => updateTable(table.id, { y: Number(v) })} /></details>
           <div className="table-actions"><button onClick={() => { clipboard.current = structuredClone(table); setNotice("コピーしました。Ctrl+Vで貼り付けます"); }}>卓をコピー</button><button onClick={pasteTable}>貼り付け</button><button className="danger" onClick={deleteTable}>卓を削除</button></div>

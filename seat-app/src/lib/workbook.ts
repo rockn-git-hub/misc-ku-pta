@@ -69,8 +69,8 @@ export function buildWorkbook(data: DocumentState): XLSX.WorkBook {
     [data.title, data.orientation === "portrait" ? "縦" : "横", data.scale ?? 1, data.fontSize ?? 24, data.showNames ? "ON" : "OFF", ...data.attributeLabels, data.titleFontSize ?? (data.fontSize ?? 24) * 1.2],
     ["会場倍率は既存会場の座標系を復元する値。画面の表示倍率とは別"],
     ["形状：円卓／正方形／長机。デザイン：通常／くっつけた長机。向き：横／縦。予定席数：0〜100。追加は既存行をコピー"],
-    layoutColumns,
-    ...data.tables.map(t => [t.alias, t.shape === "circle" ? "円卓" : t.shape === "square" ? "正方形" : "長机", t.design === "joined" ? "くっつけた長机" : "通常", t.orientation === "portrait" ? "縦" : "横", t.x, t.y, t.width ?? "", t.height ?? "", t.radius ?? "", t.plannedSeats ?? t.seats, t.seats, t.id, t.number]),
+    [...layoutColumns, "先頭の机の席数", "先頭の机の反転", "後方の机の反転"],
+    ...data.tables.map(t => [t.alias, t.shape === "circle" ? "円卓" : t.shape === "square" ? "正方形" : "長机", t.design === "joined" ? "くっつけた長机" : "通常", t.orientation === "portrait" ? "縦" : "横", t.x, t.y, t.width ?? "", t.height ?? "", t.radius ?? "", t.plannedSeats ?? t.seats, t.seats, t.id, t.number, t.joinedLayout?.firstSeats ?? "", t.joinedLayout ? t.joinedLayout.firstReversed ? "ON" : "OFF" : "", t.joinedLayout ? t.joinedLayout.secondReversed ? "ON" : "OFF" : ""]),
   ];
   const layout = XLSX.utils.aoa_to_sheet(settings);
   styleSheet(layout, 7, true);
@@ -167,6 +167,7 @@ function readLayout(workbook: XLSX.WorkBook): DocumentState {
     const rawNumber = Number(r[12]);
     const number = Number.isInteger(rawNumber) && rawNumber > 0 && !tables.some(t => t.number === rawNumber) ? rawNumber : Math.max(0, ...tables.map(t => t.number)) + 1;
     const table: Table = { id, number, alias, shape: r[1] === "円卓" ? "circle" : r[1] === "正方形" ? "square" : "rectangle", ...(r[2] === "くっつけた長机" ? { design: "joined" as const } : {}), orientation: r[3] === "縦" ? "portrait" : "landscape", x: Number(r[4]), y: Number(r[5]), width: r[6] === "" ? undefined : Number(r[6]), height: r[7] === "" ? undefined : Number(r[7]), radius: r[8] === "" ? undefined : Number(r[8]), plannedSeats: Number(r[9]), seats, seatsDetail: [] };
+    if (r[13] !== undefined && r[13] !== "") table.joinedLayout = { firstSeats: Number(r[13]), firstReversed: participation(r[14], `${location}・先頭の机の反転`), secondReversed: participation(r[15], `${location}・後方の机の反転`) };
     try {
       normalizeDocument({ version: 1, updatedAt: "", orientation: "landscape", tables: [table], participants: [] });
     } catch (error) { throw new Error(`${location}：${error instanceof Error ? error.message : "復元情報が不正です"}`); }

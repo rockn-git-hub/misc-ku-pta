@@ -14,6 +14,7 @@ export interface Table {
   alias: string;
   shape: "circle" | "rectangle" | "square";
   design?: "joined"; // 長机をくっつけた外観
+  joinedLayout?: { firstSeats: number; firstReversed: boolean; secondReversed: boolean }; // 連結した2台の席数と配置方向
   x: number;
   y: number;
   width?: number;
