@@ -8,7 +8,7 @@
 // ============================================================
 
 import React from "react";
-import type Konva from "konva";
+import Konva from "konva";
 import { Group, Rect, Text, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { seatHitArea, seatMetrics } from "../lib/seatGeometry";
@@ -188,6 +188,26 @@ function calculateLabelPosition(
 // ------------------------------------------------------------
 // 蟆上さ繝ｳ繝昴・繝阪Φ繝・ SeatRect・亥ｺｧ蟶ｭ繝懊ャ繧ｯ繧ｹ譛ｬ菴難ｼ・
 // ------------------------------------------------------------
+/** 入れ替え直後の席番号と名札を青緑色で強調し、2秒でフェードアウト */
+function SwapFeedback({ seatX, seatY, seatWidth, seatHeight, label }: {
+  seatX: number; seatY: number; seatWidth: number; seatHeight: number;
+  label: { x: number; y: number; width: number; height: number } | null;
+}) {
+  const group = React.useRef<Konva.Group>(null);
+  React.useEffect(() => {
+    if (!group.current) return;
+    group.current.opacity(1);
+    const tween = new Konva.Tween({ node: group.current, duration: 2, opacity: 0, easing: Konva.Easings.EaseIn });
+    tween.play();
+    return () => { tween.destroy(); };
+  }, []);
+  const style = { fill: "rgba(13,148,136,0.22)", stroke: "#0d9488", strokeWidth: 2, shadowColor: "#14b8a6", shadowBlur: 12, shadowOpacity: 0.65 };
+  return <Group ref={group} name="swap-feedback" listening={false}>
+    <Rect x={seatX - seatWidth / 2} y={seatY - seatHeight / 2} width={seatWidth} height={seatHeight} cornerRadius={6} {...style} />
+    {label && <Rect {...label} cornerRadius={8} {...style} />}
+  </Group>;
+}
+
 const SeatRect: React.FC<{
   seatIndex: number;
   seatX: number;
@@ -520,6 +540,10 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
           compact={!!props.geometry}
           text={labelText}
         />
+      )}
+      {interaction?.swapFeedback?.seats.some(seat => seat.tableId === table.id && seat.seatIndex === seatIndex) && (
+        <SwapFeedback key={interaction.swapFeedback.generation} seatX={seatX} seatY={seatY} seatWidth={seatWidth} seatHeight={seatHeight}
+          label={labelText ? { x: rectX, y: rectY, width: outerW, height: outerH } : null} />
       )}
     </Group>
   );
