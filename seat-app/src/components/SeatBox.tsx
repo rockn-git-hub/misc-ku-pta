@@ -11,7 +11,7 @@ import React from "react";
 import type Konva from "konva";
 import { Group, Rect, Text, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
-import { seatMetrics } from "../lib/seatGeometry";
+import { seatHitArea, seatMetrics } from "../lib/seatGeometry";
 import type { SeatGeometry } from "../lib/seatGeometry";
 import type { Table } from "../types";
 import { SeatInteractionContext } from "./SeatInteractionContext";
@@ -197,12 +197,21 @@ const SeatRect: React.FC<{
   fontSize: number;
   isSelected: boolean;
   isSwapSource: boolean;
+  hitArea: (scale: number) => { x: number; y: number; width: number; height: number };
   onClick: (e: KonvaEventObject<MouseEvent>) => void;
-}> = ({ seatIndex, seatX, seatY, seatWidth, seatHeight, fontSize, isSelected, isSwapSource, onClick }) => (
+}> = ({ seatIndex, seatX, seatY, seatWidth, seatHeight, fontSize, isSelected, isSwapSource, hitArea, onClick }) => (
   <Group x={seatX} y={seatY} onClick={onClick}>
     {/* 蠎ｧ蟶ｭ遏ｩ蠖｢ */}
     <Rect
       name="seat-body"
+      hitFunc={(context, shape) => {
+        const scale = shape.getAbsoluteScale();
+        const area = hitArea(Math.min(Math.abs(scale.x), Math.abs(scale.y)));
+        context.beginPath();
+        context.rect(area.x, area.y, area.width, area.height);
+        context.closePath();
+        context.fillStrokeShape(shape);
+      }}
       width={seatWidth}
       height={seatHeight}
       fill={isSwapSource ? "#dc2626" : "#ffffff"}
@@ -220,6 +229,7 @@ const SeatRect: React.FC<{
     {/* 蠎ｧ蟶ｭ逡ｪ蜿ｷ */}
     <Text
       name="seat-number"
+      listening={false}
       text={`席${seatIndex + 1}`}
       fontSize={fontSize}
       fill={isSwapSource ? "#ffffff" : "black"}
@@ -489,6 +499,7 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
         seatHeight={seatHeight}
         fontSize={fontSize}
         isSelected={!!isSelected}
+        hitArea={scale => seatHitArea(table, seatIndex, fontSize, interaction ?? { showNames: true }, scale)}
         isSwapSource={interaction?.swapFrom?.tableId === table.id && interaction.swapFrom.seatIndex === seatIndex}
         onClick={handleClick}
       />

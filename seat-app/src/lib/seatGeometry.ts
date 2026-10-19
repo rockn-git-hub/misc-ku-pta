@@ -31,7 +31,7 @@ export function seatMetrics(table: Table, index: number, fontSize: number, displ
   const rectHeight = fontSize * lines.length;
   return { text, padding, rectWidth, rectHeight, width: text ? rectWidth + padding * 2 : 0,
     height: text ? rectHeight + padding * 2 : 0,
-    seatWidth: Math.ceil(Math.max(fontSize * 2.2, textWidth(`席${index + 1}`, fontSize) + 8)), seatHeight: Math.ceil(fontSize * 1.2) };
+    seatWidth: Math.ceil(Math.max(fontSize * 2.2, textWidth(`席${index + 1}`, fontSize) + 8)), seatHeight: Math.ceil(fontSize * 1.4) };
 }
 
 /** 連結卓の席数変更にも追従する2台の構成 */
@@ -66,9 +66,13 @@ export function buildSeatGeometry(table: Table, fontSize: number, display: SeatD
     const angle = -Math.PI / 2 + (i + 0.5) * 2 * Math.PI / table.seats;
     const dx = Math.cos(angle), dy = Math.sin(angle), radius = table.radius ?? 117;
     const x = dx * radius, y = dy * radius;
-    const distance = radius + Math.abs(dx) * (m.seatWidth + m.width) / 2 + Math.abs(dy) * (m.seatHeight + m.height) / 2 + GAP;
+    // 左右対称の名札は大きい方の寸法を基準に距離と上端を統一
+    const mirror = metrics[metrics.length - 1 - i];
+    const labelHeight = Math.max(m.height, mirror.height);
+    const distance = radius + Math.abs(dx) * (Math.max(m.seatWidth, mirror.seatWidth) + Math.max(m.width, mirror.width)) / 2
+      + Math.abs(dy) * (Math.max(m.seatHeight, mirror.seatHeight) + labelHeight) / 2 + GAP;
     return { x, y, text: m.text, number: { x: x - m.seatWidth / 2, y: y - m.seatHeight / 2, width: m.seatWidth, height: m.seatHeight },
-      label: { x: dx * distance - m.width / 2, y: dy * distance - m.height / 2, width: m.width, height: m.height } };
+      label: { x: dx * distance - m.width / 2, y: dy * distance - labelHeight / 2, width: m.width, height: m.height } };
   });
   // 正方形も既存の席順を維持し、左右の辺へ配置
   const horizontal = table.shape !== "square" && table.orientation !== "portrait";
@@ -88,6 +92,42 @@ export function buildSeatGeometry(table: Table, fontSize: number, display: SeatD
     return { x, y, text: m.text, number: { x: x - m.seatWidth / 2, y: y - m.seatHeight / 2, width: m.seatWidth, height: m.seatHeight },
       label: { x: labelX, y: labelY, width: m.width, height: m.height } };
   });
+}
+
+/** 名札を避け、隣の席とは中間で分けた縮小表示用のクリック範囲 */
+export function seatHitArea(table: Table, index: number, fontSize: number, display: SeatDisplay, scale: number): Box {
+  const geometry = buildSeatGeometry(table, fontSize, display);
+  const number = geometry[index].number;
+  const minimum = 28 / Math.max(0.01, Math.abs(scale));
+  const desired = geometry.map(seat => {
+    const paddingX = Math.max(4, (minimum - seat.number.width) / 2);
+    const paddingY = Math.max(4, (minimum - seat.number.height) / 2);
+    return { x: seat.number.x - paddingX, y: seat.number.y - paddingY,
+      width: seat.number.width + paddingX * 2, height: seat.number.height + paddingY * 2 };
+  });
+  const area = desired[index];
+  let left = area.x, right = area.x + area.width, top = area.y, bottom = area.y + area.height;
+  for (let i = 0; i < geometry.length; i++) {
+    const other = geometry[i].number;
+    if (i !== index && overlaps(area, desired[i])) {
+      const horizontal = Math.max(other.x - number.x - number.width, number.x - other.x - other.width);
+      const vertical = Math.max(other.y - number.y - number.height, number.y - other.y - other.height);
+      if (horizontal >= vertical) {
+        if (other.x > number.x) right = Math.min(right, (number.x + number.width + other.x) / 2);
+        else left = Math.max(left, (other.x + other.width + number.x) / 2);
+      } else if (other.y > number.y) bottom = Math.min(bottom, (number.y + number.height + other.y) / 2);
+      else top = Math.max(top, (other.y + other.height + number.y) / 2);
+    }
+    const label = geometry[i].label;
+    if (!geometry[i].text || !overlaps(area, label)) continue;
+    if (label.x >= number.x + number.width) right = Math.min(right, label.x - 2);
+    if (label.x + label.width <= number.x) left = Math.max(left, label.x + label.width + 2);
+    if (label.y >= number.y + number.height) bottom = Math.min(bottom, label.y - 2);
+    if (label.y + label.height <= number.y) top = Math.max(top, label.y + label.height + 2);
+  }
+  left = Math.min(left, number.x); right = Math.max(right, number.x + number.width);
+  top = Math.min(top, number.y); bottom = Math.max(bottom, number.y + number.height);
+  return { x: left - number.x, y: top - number.y, width: right - left, height: bottom - top };
 }
 
 /** 余白を含めた2つの枠の重なり判定 */
