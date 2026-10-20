@@ -1,7 +1,7 @@
 // src/lib/persist.ts
 // 席次表アプリの状態を localStorage に保存/復元するためのユーティリティ
 
-import type { Table } from "../types";
+import type { Category, Table } from "../types";
 import type { Participant } from "../types";
 
 // ここは将来のスキーマ進化を見据えて version を持たせる
@@ -15,6 +15,7 @@ export type SaveSchemaV1 = {
   titleFontSize?: number; // 用紙タイトルの独立した文字サイズ
   fontSize?: number; // ← 追加：フォントサイズを保存
   tables: Table[]; // キャンバス上のテーブルと座席情報を丸ごと
+  categories?: Category[]; // カテゴリ名と名札の色。未指定は全員白
   participants?: Participant[]; // 参加者リスト
   title?: string; // 追加：席次表タイトル
   showNames?: boolean;

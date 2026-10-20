@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { Participant } from "../types";
+import type { Category, Participant } from "../types";
 
 export type SeatInteraction = {
   mode: "layout" | "seating";
@@ -10,6 +10,7 @@ export type SeatInteraction = {
   dragTable: (tableId: string, phase: "start" | "move" | "end", x: number, y: number) => void;
   showNames: boolean;
   participants: Participant[];
+  categories: Category[];
   selectSeat: (tableId: string, seatIndex: number) => void;
   swapSeat: (tableId: string, seatIndex: number) => void;
 };

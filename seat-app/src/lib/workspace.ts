@@ -1,7 +1,8 @@
-import type { Participant, SeatDetail, Table } from "../types";
+import type { Category, Participant, SeatDetail, Table } from "../types";
 import type { SaveSchemaV1 } from "./persist";
 
 export type DocumentState = SaveSchemaV1 & {
+  categories: Category[];
   participants: Participant[];
   title: string;
   showNames: boolean;
@@ -24,12 +25,37 @@ export function integerTablePixels(table: Table): Table {
   return result;
 }
 
+/** 任意のカテゴリ名と色を最大20種類まで検証 */
+export function normalizeCategories(input: Category[] | undefined): Category[] {
+  if (input === undefined) return [];
+  if (!Array.isArray(input) || input.length > 20) throw new Error("カテゴリは最大20種類まで登録できます");
+  const names = new Set<string>();
+  return input.map(category => {
+    const name = typeof category?.name === "string" ? category.name.trim() : "";
+    if (!name || name.toLowerCase() === "none" || names.has(name)) throw new Error("カテゴリ名は空欄・none・重複を使用できません");
+    if (typeof category.color !== "string" || !/^#[0-9a-f]{6}$/i.test(category.color)) throw new Error("カテゴリの色は#から始まる6桁のカラーコードで指定してください");
+    names.add(name);
+    return { name, color: category.color };
+  });
+}
+
+/** カテゴリなし・未登録・旧ファイルの名札は白で描画 */
+export function categoryColor(categories: Category[] | undefined, name: string | null | undefined): string {
+  if (!name || name.toLowerCase() === "none") return "#ffffff";
+  return categories?.find(category => category.name === name)?.color ?? "#ffffff";
+}
+
 /** 保存データの検証と表示席数・ピクセル値の正規化 */
 export function normalizeDocument(input: SaveSchemaV1): DocumentState {
   if (input.version !== 1 || !["portrait", "landscape"].includes(input.orientation) || !Array.isArray(input.tables)) {
     throw new Error("席次表の形式が不正です");
   }
-  const participants = (input.participants ?? []).map(p => ({ ...p, id: String(p.id), attending: p.attending !== false }));
+  const categories = normalizeCategories(input.categories);
+  const participants: Participant[] = (input.participants ?? []).map(p => {
+    const person = { ...p, id: String(p.id), attending: p.attending !== false, category: categories.some(c => c.name === p.category) ? p.category! : null };
+    delete person.pta;
+    return person;
+  });
   const ids = new Set(participants.map(p => p.id));
   if (ids.size !== participants.length || participants.some(p => !p.id || !p.name.trim())) throw new Error("参加者IDの重複または氏名の空欄があります");
   const names = new Set<string>();
@@ -56,7 +82,7 @@ export function normalizeDocument(input: SaveSchemaV1): DocumentState {
         let person = participants.find(p => p.id === seat.id);
         if (!person) {
           if (!seat.name) throw new Error(`${alias}・席${index + 1}：参加者の氏名がありません`);
-          person = { id: seat.id, name: seat.name, attr1: seat.attr1, attr2: seat.attr2, attending: true };
+          person = { id: seat.id, name: seat.name, attr1: seat.attr1, attr2: seat.attr2, attending: true, category: null };
           participants.push(person);
         }
         Object.assign(seat, { name: person.name, attr1: person.attr1, attr2: person.attr2 });
@@ -70,7 +96,7 @@ export function normalizeDocument(input: SaveSchemaV1): DocumentState {
   if (!Number.isFinite(scale) || scale <= 0 || scale > 10 || !Number.isFinite(fontSize) || fontSize < 6 || fontSize > 72) throw new Error("用紙倍率または文字サイズが不正です");
   const titleFontSize = input.titleFontSize ?? fontSize * 1.2;
   if (!Number.isFinite(titleFontSize) || titleFontSize < 6 || titleFontSize > 144) throw new Error("タイトル文字サイズは6〜144で指定してください");
-  return { ...input, tables, participants, scale, fontSize, titleFontSize, title: input.title ?? "席次表", showNames: input.showNames !== false, attributeLabels: input.attributeLabels ?? ["属性1", "属性2"] };
+  return { ...input, tables, participants, categories, scale, fontSize, titleFontSize, title: input.title ?? "席次表", showNames: input.showNames !== false, attributeLabels: input.attributeLabels ?? ["属性1", "属性2"] };
 }
 
 /** 空の会場データ生成 */

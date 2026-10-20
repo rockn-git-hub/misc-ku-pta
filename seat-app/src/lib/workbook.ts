@@ -1,7 +1,7 @@
 import XLSX from "xlsx-js-style";
-import { emptySeat, normalizeDocument } from "./workspace";
+import { emptySeat, normalizeCategories, normalizeDocument } from "./workspace";
 import type { DocumentState } from "./workspace";
-import type { Participant, Table } from "../types";
+import type { Category, Participant, Table } from "../types";
 
 type CellValue = string | number | boolean;
 type ImportRow = { table: string; seat: number | null; person: Participant | null; row: number };
@@ -45,19 +45,19 @@ function styleSheet(sheet: XLSX.WorkSheet, headerRow: number, gray: boolean) {
   sheet["!cols"] = Array.from({ length: range.e.c + 1 }, (_, i) => ({ wch: i === 0 || i === 2 ? 30 : 18 }));
 }
 
-/** 2シートによる全体保存用ワークブック生成 */
+/** 席次・配置・カテゴリを保存するワークブック生成 */
 export function buildWorkbook(data: DocumentState): XLSX.WorkBook {
-  const rows: CellValue[][] = [["テーブル名", "席番号", "氏名", data.attributeLabels[0], data.attributeLabels[1], "参加", "参加者ID"]];
+  const rows: CellValue[][] = [["テーブル名", "席番号", "氏名", data.attributeLabels[0], data.attributeLabels[1], "参加", "参加者ID", "カテゴリ"]];
   const used = new Set<string>();
   for (const table of data.tables) {
     table.seatsDetail.slice(0, table.seats).forEach((seat, index) => {
       const person = data.participants.find(p => p.id === seat.id);
       if (person) used.add(person.id);
-      rows.push([table.alias, index + 1, person?.name ?? "", person?.attr1 ?? "", person?.attr2 ?? "", person ? person.attending === false ? "OFF" : "ON" : "", person?.id ?? ""]);
+      rows.push([table.alias, index + 1, person?.name ?? "", person?.attr1 ?? "", person?.attr2 ?? "", person ? person.attending === false ? "OFF" : "ON" : "", person?.id ?? "", person?.category ?? ""]);
     });
   }
   for (const person of data.participants.filter(p => !used.has(p.id))) {
-    rows.push(["", "", person.name, person.attr1, person.attr2, person.attending === false ? "OFF" : "ON", person.id]);
+    rows.push(["", "", person.name, person.attr1, person.attr2, person.attending === false ? "OFF" : "ON", person.id, person.category ?? ""]);
   }
   const roster = XLSX.utils.aoa_to_sheet(rows);
   styleSheet(roster, 0, false);
@@ -77,6 +77,9 @@ export function buildWorkbook(data: DocumentState): XLSX.WorkBook {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, roster, "席次");
   XLSX.utils.book_append_sheet(workbook, layout, "配置");
+  const categories = XLSX.utils.aoa_to_sheet([["カテゴリ名", "色"], ...data.categories.map(category => [category.name, category.color])]);
+  styleSheet(categories, 0, false);
+  XLSX.utils.book_append_sheet(workbook, categories, "カテゴリ");
   return workbook;
 }
 
@@ -116,6 +119,15 @@ function participation(value: unknown, location: string): boolean {
   throw new Error(`${location}：参加はON／OFFで指定してください`);
 }
 
+/** カテゴリシートのない旧Excelは色の登録なしで復元 */
+function readCategories(workbook: XLSX.WorkBook): Category[] {
+  const sheet = workbook.Sheets["カテゴリ"];
+  if (!sheet) return [];
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: true }) as unknown[][];
+  if (rows[0]?.[0] !== "カテゴリ名" || rows[0]?.[1] !== "色") throw new Error("カテゴリ・1行：カテゴリ名、色の列が必要です");
+  return normalizeCategories(rows.slice(1).filter(row => row.some(value => String(value).trim())).map(row => ({ name: String(row[0] ?? ""), color: String(row[1] ?? "") })));
+}
+
 /** 行番号を付けて席次を解析 */
 function readRoster(workbook: XLSX.WorkBook): ImportRow[] {
   const sheet = workbook.Sheets["席次"] ?? workbook.Sheets["着席名簿"] ?? workbook.Sheets[workbook.SheetNames[0]];
@@ -137,7 +149,8 @@ function readRoster(workbook: XLSX.WorkBook): ImportRow[] {
     if (!table && rawSeat) throw new Error(`席次・${row}行：席番号に対応するテーブル名がありません`);
     const idCol = headers.lastIndexOf("参加者ID");
     const flagCol = headers.lastIndexOf("参加");
-    const person = name ? { id: idCol >= 0 && values[idCol] ? String(values[idCol]) : crypto.randomUUID(), name, attr1: String(values[3] ?? ""), attr2: String(values[4] ?? ""), attending: participation(flagCol >= 0 ? values[flagCol] : "ON", `席次・${row}行`) } : null;
+    const categoryCol = headers.lastIndexOf("カテゴリ");
+    const person = name ? { id: idCol >= 0 && values[idCol] ? String(values[idCol]) : crypto.randomUUID(), name, attr1: String(values[3] ?? ""), attr2: String(values[4] ?? ""), category: categoryCol >= 0 ? String(values[categoryCol] ?? "").trim() || null : null, attending: participation(flagCol >= 0 ? values[flagCol] : "ON", `席次・${row}行`) } : null;
     result.push({ table, seat, person, row });
   });
   return result;
@@ -179,6 +192,7 @@ function readLayout(workbook: XLSX.WorkBook): DocumentState {
 /** 全体復元または席次だけの置き換えを事前検証 */
 export function parseWorkbook(workbook: XLSX.WorkBook, current: DocumentState, mode: "full" | "roster"): ImportPreview {
   const source = mode === "full" ? readLayout(workbook) : structuredClone(current);
+  source.categories = readCategories(workbook);
   const rows = readRoster(workbook);
   const participants: Participant[] = [];
   const occupied = new Set<string>();

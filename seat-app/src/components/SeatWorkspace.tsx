@@ -244,6 +244,7 @@ export function SeatWorkspace() {
   const [otherMenu, setOtherMenu] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [categorySettings, setCategorySettings] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState<"all" | "unassigned" | "pick" | null>(null);
   const [peopleQuery, setPeopleQuery] = useState("");
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
@@ -539,6 +540,18 @@ export function SeatWorkspace() {
     } else { setSwapFeedback(null); setSwapFrom(next); }
   }
 
+  /** カテゴリ名の変更時に所属する全参加者の値も同期 */
+  function renameCategory(before: string, value: string) {
+    const name = value.trim();
+    if (!name || name.toLowerCase() === "none" || data.categories.some(c => c.name === name && c.name !== before)) {
+      setNotice("カテゴリ名は空欄・none・重複を使用できません"); return;
+    }
+    commit(draft => {
+      draft.categories.find(c => c.name === before)!.name = name;
+      draft.participants.forEach(person => { if (person.category === before) person.category = name; });
+    });
+  }
+
   /** 参加者の変更を名簿と割り当て席へ同時反映 */
   function updatePerson(id: string, changes: Partial<Participant>) {
     commit(draft => {
@@ -831,9 +844,9 @@ export function SeatWorkspace() {
   const sceneSelectTable = useCallback((id: string, additive = false) => sceneActions.current.selectTable(id, additive), []);
   const sceneDragTable = useCallback((id: string, phase: "start" | "move" | "end", x: number, y: number) => sceneActions.current.dragTable(id, phase, x, y), []);
   // 拡縮とスクロールでは卓・席のReact要素と参加者照合を再生成しない描画内容
-  const diagram = useMemo(() => <SeatInteractionContext.Provider value={{ mode, selectedTableIds, swapFeedback, swapFrom, selectTable: sceneSelectTable, dragTable: sceneDragTable, showNames: data.showNames, participants: data.participants, selectSeat: sceneSelectSeat, swapSeat: sceneSwapSeat }}>
+  const diagram = useMemo(() => <SeatInteractionContext.Provider value={{ mode, selectedTableIds, swapFeedback, swapFrom, selectTable: sceneSelectTable, dragTable: sceneDragTable, showNames: data.showNames, participants: data.participants, categories: data.categories, selectSeat: sceneSelectSeat, swapSeat: sceneSwapSeat }}>
     {displayTables.map(t => <TableBox key={t.id} table={t} fontSize={displayFontSize} tables={displayTables} selectedSeat={legacySeat} setSelectedSeat={ignoreSelection} setTables={sceneSetTables} setSelectedId={sceneSelectTable} updateTable={sceneUpdateTable} isSeatModalOpen={false} setFocusTableId={ignoreSelection} selectedId={selectedId} shapeRefs={shapeRefs} />)}
-  </SeatInteractionContext.Provider>, [mode, selectedTableIds, swapFeedback, swapFrom, data.showNames, data.participants, displayTables, displayFontSize, legacySeat, selectedId, sceneSelectSeat, sceneSwapSeat, sceneSetTables, sceneSelectTable, sceneUpdateTable, sceneDragTable]);
+  </SeatInteractionContext.Provider>, [mode, selectedTableIds, swapFeedback, swapFrom, data.showNames, data.participants, data.categories, displayTables, displayFontSize, legacySeat, selectedId, sceneSelectSeat, sceneSwapSeat, sceneSetTables, sceneSelectTable, sceneUpdateTable, sceneDragTable]);
 
   /** 会場図のドラッグ処理が既定のフォーカス移動を止める前に入力を確定 */
   function blurOutsideField(event: ReactPointerEvent<HTMLDivElement>) {
@@ -856,7 +869,7 @@ export function SeatWorkspace() {
       <div ref={otherMenuAnchor} className="menu-anchor file-other-menu"><button className="file-action file-action-more" aria-label="その他" title="その他（席次の読み込み・新規作成）" aria-expanded={otherMenu} onClick={() => { setOtherMenu(!otherMenu); setFileMenu(false); }}><MenuIcon name="more" /></button>{otherMenu && <div className="dropdown">
         <button onClick={() => { setImportMode("roster"); setOtherMenu(false); fileInput.current!.accept = ".xlsx"; fileInput.current?.click(); }}>席次だけ読み込む</button>
         <hr /><button className="danger" onClick={() => { setOtherMenu(false); setConfirmation({ title: "新規作成", message: "机・参加者名簿・操作履歴をすべて消去します。この操作は元に戻せません。必要なら先にExcelまたはJSONへ保存してください。", accept: () => { replace(blankDocument()); setSelectedId(null); setSelectedSeat(null); setSwapFrom(null); setCanvasOrigin(null); fitted.current = false; } }); }}>新規作成</button>
-      </div>}</div></div><details ref={settingsMenuAnchor} className="menu-anchor settings-menu"><summary>設定 ▾</summary><div className="dropdown"><button onClick={e => { e.currentTarget.closest("details")?.removeAttribute("open"); setSettings(true); }}>属性の見出し</button></div></details><div className="history-buttons"><button aria-label="↶ 元に戻す" title="元に戻す (Ctrl+Z)" disabled={!history.canUndo} onClick={() => { history.undo(); setSwapFeedback(null); setSwapFrom(null); }}>↶</button><button aria-label="↷ やり直す" title="やり直す (Ctrl+Y)" disabled={!history.canRedo} onClick={() => { history.redo(); setSwapFeedback(null); setSwapFrom(null); }}>↷</button></div>
+      </div>}</div></div><details ref={settingsMenuAnchor} className="menu-anchor settings-menu"><summary>設定 ▾</summary><div className="dropdown"><button onClick={e => { e.currentTarget.closest("details")?.removeAttribute("open"); setSettings(true); }}>属性の見出し</button><button onClick={e => { e.currentTarget.closest("details")?.removeAttribute("open"); setCategorySettings(true); }}>カテゴリと色</button></div></details><div className="history-buttons"><button aria-label="↶ 元に戻す" title="元に戻す (Ctrl+Z)" disabled={!history.canUndo} onClick={() => { history.undo(); setSwapFeedback(null); setSwapFrom(null); }}>↶</button><button aria-label="↷ やり直す" title="やり直す (Ctrl+Y)" disabled={!history.canRedo} onClick={() => { history.redo(); setSwapFeedback(null); setSwapFrom(null); }}>↷</button></div>
       <div className="mode-switch"><button title="配置：卓を動かす・サイズや位置を整える" aria-pressed={mode === "layout"} onClick={() => { setMode("layout"); setSelectedSeat(null); setSwapFrom(null); }}>配置</button><button title="席次：参加者を編集する・席を入れ替える（卓はドラッグしない）" aria-pressed={mode === "seating"} onClick={() => { setMode("seating"); setSelectedId(selectedId); setRangeActive(false); }}>席次</button></div>
       <div ref={addMenuAnchor} className="menu-anchor"><button className="primary toolbar-icon" aria-label="卓追加" title="卓追加" aria-expanded={addMenu} onClick={() => setAddMenu(!addMenu)}><MenuIcon name="add-table" /></button>{addMenu && <div className="dropdown">{[["circle", "円卓"], ["square", "正方形"], ["rectangle", "長机"], ["joined", "くっつけた長机"]].map(([value, name]) => <button key={value} onClick={() => addTable(value)}>{name}</button>)}</div>}</div>
       {mode === "layout" && <button className="toolbar-icon" aria-label="範囲選択" aria-pressed={rangeActive} title="範囲選択：余白からドラッグして卓を囲む (Shift+ドラッグでも選択可能)" onClick={() => setRangeActive(!rangeActive)}><MenuIcon name="range-select" /></button>}
@@ -949,6 +962,7 @@ export function SeatWorkspace() {
             <EditField key={`name-${person.id}`} label="氏名" value={person.name} onCommit={name => { if (name.trim()) updatePerson(person.id, { name: name.trim() }); else setNotice("氏名を入力してください。空席化は専用ボタンを使ってください"); }} />
             <EditField key={`attr1-${person.id}`} label={data.attributeLabels[0]} value={person.attr1} onCommit={attr1 => updatePerson(person.id, { attr1 })} /><EditField key={`attr2-${person.id}`} label={data.attributeLabels[1]} value={person.attr2} onCommit={attr2 => updatePerson(person.id, { attr2 })} />
             <label className="check"><input type="checkbox" checked={person.attending !== false} onChange={e => updatePerson(person.id, { attending: e.target.checked })} />参加</label>
+            <label className="field"><span>カテゴリ</span><select aria-label="カテゴリ" value={person.category ?? ""} onChange={e => updatePerson(person.id, { category: e.target.value || null })}><option value="">なし（白）</option>{data.categories.map(category => <option key={category.name} value={category.name}>{category.name}</option>)}</select></label>
           </> : <p>空席</p>}
             <div className="seat-actions"><button className="primary" onClick={() => { setPeopleQuery(""); setPeopleOpen("pick"); }}>参加者変更</button><button onClick={() => setSwapFrom(selectedSeat)}>入れ替え</button><button onClick={() => commit(d => { const target = d.tables.find(t => t.id === selectedSeat.tableId)!; target.seatsDetail[selectedSeat.seatIndex] = emptySeat(selectedSeat.seatIndex); })}>空席にする</button></div>
           </section>}
@@ -971,14 +985,29 @@ export function SeatWorkspace() {
     <input ref={fileInput} hidden type="file" onChange={e => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void loadFile(file); }} />
     {confirmation && <Dialog title={confirmation.title} close={() => setConfirmation(null)}><p>{confirmation.message}</p><div className="dialog-actions"><button data-cancel onClick={() => setConfirmation(null)}>キャンセル</button><button className="primary" onClick={() => { confirmation.accept(); setConfirmation(null); }}>実行する</button></div></Dialog>}
     {preview && <Dialog title={importMode === "full" ? "席次表を読み込む" : "席次だけ読み込む"} close={() => setPreview(null)}><p>{importMode === "full" ? "現在の机・名簿を置き換え、操作履歴をリセットします。" : "配置を保ち、参加者名簿と席次を置き換えます。元に戻すで復旧できます。"}</p><ul>{preview.summary.map((line, index) => <li key={index}>{line}</li>)}</ul><LayoutPreview data={preview.data} /><div className="import-plan">{preview.data.tables.map(t => <div key={t.id}><strong>{t.alias}</strong><small>{t.seats}席</small><span>{t.seatsDetail.map(s => s.name || "空席").join(" ／ ")}</span></div>)}</div><div className="dialog-actions"><button data-cancel onClick={() => setPreview(null)}>キャンセル</button><button className="primary" onClick={() => { if (importMode === "full") replace(preview.data); else commit(d => Object.assign(d, preview.data)); setPreview(null); setSelectedId(null); setSelectedSeat(null); setSwapFrom(null); if (importMode === "full") { setCanvasOrigin(null); fitted.current = false; } }}>この内容で反映</button></div></Dialog>}
+    {categorySettings && <Dialog title="カテゴリと色" close={() => setCategorySettings(false)}>
+      <p>同じカテゴリの名札は同じ色になります。なし・none・null・未登録は白です（最大20種類）。</p>
+      {data.categories.map(category => <section key={category.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <EditField label="カテゴリ名" value={category.name} onCommit={name => renameCategory(category.name, name)} />
+        <input type="color" aria-label={`${category.name}の色`} value={category.color} onInput={e => { const color = e.currentTarget.value; commit(draft => { draft.categories.find(c => c.name === category.name)!.color = color; }); }} />
+        <button aria-label={`${category.name}を削除`} onClick={() => commit(draft => { draft.categories = draft.categories.filter(c => c.name !== category.name); draft.participants.forEach(person => { if (person.category === category.name) person.category = null; }); })}>削除</button>
+      </section>)}
+      <form className="new-person" onSubmit={e => {
+        e.preventDefault(); const form = new FormData(e.currentTarget); const name = String(form.get("categoryName") ?? "").trim();
+        if (data.categories.length >= 20 || !name || name.toLowerCase() === "none" || data.categories.some(c => c.name === name)) { setNotice("カテゴリは最大20種類です。空欄・none・重複した名前は登録できません"); return; }
+        const color = String(form.get("categoryColor") ?? "#dbeafe");
+        commit(draft => { draft.categories.push({ name, color }); }); e.currentTarget.reset();
+      }}><input name="categoryName" aria-label="追加するカテゴリ名" placeholder="カテゴリ名" required /><input name="categoryColor" aria-label="追加するカテゴリの色" type="color" defaultValue="#dbeafe" /><button type="submit" disabled={data.categories.length >= 20}>カテゴリ追加</button></form>
+      <button data-cancel onClick={() => setCategorySettings(false)}>閉じる</button>
+    </Dialog>}
     {settings && <Dialog title="属性設定" close={() => setSettings(false)}><EditField label="属性1の見出し" value={data.attributeLabels[0]} onCommit={v => commit(d => { d.attributeLabels[0] = v.trim() || "属性1"; })} /><EditField label="属性2の見出し" value={data.attributeLabels[1]} onCommit={v => commit(d => { d.attributeLabels[1] = v.trim() || "属性2"; })} /><button data-cancel onClick={() => setSettings(false)}>閉じる</button></Dialog>}
     {peopleOpen && !confirmation && <Dialog title={peopleOpen === "pick" ? "参加者を選ぶ" : peopleOpen === "unassigned" ? "未着席の参加者" : "参加者名簿"} close={() => setPeopleOpen(null)}><input aria-label="参加者を検索" placeholder="氏名・属性で検索" value={peopleQuery} onChange={e => setPeopleQuery(e.target.value)} /><div className="people-list">{filteredPeople.map(p => {
       const at = assigned.get(p.id);
-      return <div key={p.id}><button disabled={peopleOpen !== "pick" && !at} onClick={() => { if (peopleOpen === "pick") assignPerson(p); else if (at) { reveal(at.table, at.index); setPeopleOpen(null); } }}>{p.name}<small>{p.attr1} {p.attr2}｜{at ? `${at.table.alias}・席${at.index + 1}` : "未着席"}{p.attending === false ? "｜不参加" : ""}</small></button><button aria-label={`${p.name}の名簿情報を編集`} onClick={() => setEditingPersonId(p.id)}>編集</button><label className="check"><input type="checkbox" checked={p.attending !== false} onChange={e => updatePerson(p.id, { attending: e.target.checked })} />参加</label></div>;
+      return <div key={p.id}><button disabled={peopleOpen !== "pick" && !at} onClick={() => { if (peopleOpen === "pick") assignPerson(p); else if (at) { reveal(at.table, at.index); setPeopleOpen(null); } }}>{p.name}<small>{p.attr1} {p.attr2}｜{at ? `${at.table.alias}・席${at.index + 1}` : "未着席"}{p.attending === false ? "｜不参加" : ""}</small></button><button aria-label={`${p.name}の名簿情報を編集`} onClick={() => setEditingPersonId(p.id)}>編集</button><label className="check"><input type="checkbox" checked={p.attending !== false} onChange={e => updatePerson(p.id, { attending: e.target.checked })} />参加</label><select aria-label={`${p.name}のカテゴリ`} value={p.category ?? ""} onChange={e => updatePerson(p.id, { category: e.target.value || null })}><option value="">なし（白）</option>{data.categories.map(category => <option key={category.name} value={category.name}>{category.name}</option>)}</select></div>;
     })}{!filteredPeople.length && <p>該当する参加者はいません</p>}</div>{editingPerson && <section><h3>名簿情報を編集</h3><EditField key={`person-name-${editingPerson.id}`} label="氏名" value={editingPerson.name} onCommit={name => { if (name.trim()) updatePerson(editingPerson.id, { name: name.trim() }); else setNotice("氏名を入力してください"); }} /><EditField key={`person-attr1-${editingPerson.id}`} label={data.attributeLabels[0]} value={editingPerson.attr1} onCommit={attr1 => updatePerson(editingPerson.id, { attr1 })} /><EditField key={`person-attr2-${editingPerson.id}`} label={data.attributeLabels[1]} value={editingPerson.attr2} onCommit={attr2 => updatePerson(editingPerson.id, { attr2 })} /><button onClick={() => setEditingPersonId(null)}>編集を閉じる</button></section>}{peopleOpen === "all" && <form className="new-person" onSubmit={e => {
       e.preventDefault(); const form = new FormData(e.currentTarget); const name = String(form.get("name") ?? "").trim(); if (!name) return;
       const attr1 = String(form.get("attr1") ?? ""), attr2 = String(form.get("attr2") ?? "");
-      commit(d => { d.participants.push({ id: crypto.randomUUID(), name, attr1, attr2, attending: true }); }); e.currentTarget.reset();
+      commit(d => { d.participants.push({ id: crypto.randomUUID(), name, attr1, attr2, category: null, attending: true }); }); e.currentTarget.reset();
     }}><h3>参加者を追加</h3><input name="name" aria-label="追加する氏名" placeholder="氏名" required /><input name="attr1" placeholder={data.attributeLabels[0]} /><input name="attr2" placeholder={data.attributeLabels[1]} /><button type="submit">追加</button></form>}<button data-cancel onClick={() => setPeopleOpen(null)}>閉じる</button></Dialog>}
   </div>;
 }

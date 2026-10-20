@@ -8,6 +8,7 @@
 // ============================================================
 
 import React from "react";
+import { categoryColor } from "../lib/workspace";
 import Konva from "konva";
 import { Group, Rect, Text, Line } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
@@ -279,6 +280,7 @@ const SeatLabel: React.FC<{
   fontSize: number;
   text: string;
   compact?: boolean;
+  color: string;
 }> = ({
   seatX,
   seatY,
@@ -292,6 +294,7 @@ const SeatLabel: React.FC<{
   fontSize,
   text,
   compact,
+  color,
 }) => {
   const outerW = rectWidth + padding * 2;
   const outerH = rectHeight + padding * 2;
@@ -303,7 +306,7 @@ const SeatLabel: React.FC<{
         y={rectY}
         width={outerW}
         height={outerH}
-        fill="#ffffff"
+        fill={color}
         stroke="#64748b"
         strokeWidth={1}
         cornerRadius={8}
@@ -538,6 +541,7 @@ export const SeatBox: React.FC<SeatBoxProps> = (props) => {
           padding={padding}
           fontSize={fontSize}
           compact={!!props.geometry}
+          color={categoryColor(interaction?.categories, interaction?.participants.find(person => person.id === table.seatsDetail[seatIndex]?.id)?.category)}
           text={labelText}
         />
       )}

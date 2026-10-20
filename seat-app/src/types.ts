@@ -28,10 +28,14 @@ export interface Table {
   orientation?: "landscape" | "portrait";
 }
 
+export type Category = { name: string; color: string };
+
 export type Participant = {
   id: string;
   name: string;
   attr1: string;
   attr2: string;
+  category?: string | null; // 未指定・null・noneはカテゴリなし
+  pta?: boolean; // 旧ファイルの読み込み用。名札の色には使用しない
   attending?: boolean; // 未指定は参加ON
 };
