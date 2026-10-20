@@ -904,7 +904,8 @@ export function SeatWorkspace() {
       <div className="viewport-renderer" style={{ width: size.width, height: size.height }}>
         <Stage ref={stage} width={size.width} height={size.height}>
           <Layer><Group name="document-root" x={canvasLeft - viewScroll.left} y={canvasTop - viewScroll.top} scaleX={zoom} scaleY={zoom}><Rect name="paper-background" width={pageWidth} height={pageHeight} fill="#f8fafc" stroke="#cbd5e1" onClick={() => { setSelectedId(null); setSelectedSeat(null); setSwapFrom(null); }} />
-            <Text x={18} y={16} text={data.title} fontSize={displayTitleFontSize} fill="#0f172a" listening={false} />
+            {/* 用紙の向き・大きさによらず、PDF上で左・上から8mmの余白 */}
+            <Text x={pageWidth * 8 / (data.orientation === "landscape" ? 297 : 210)} y={pageHeight * 8 / (data.orientation === "landscape" ? 210 : 297)} text={data.title} fontSize={displayTitleFontSize} fill="#0f172a" listening={false} />
             {diagram}
             <Transformer ref={transformer} rotateEnabled={false} boundBoxFunc={(oldBox, newBox) => Math.abs(newBox.width) < 40 * zoom || Math.abs(newBox.height) < 30 * zoom ? oldBox : newBox} />
           </Group></Layer>
